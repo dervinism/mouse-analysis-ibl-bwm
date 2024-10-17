@@ -15,8 +15,17 @@ from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 from pprint import pprint
-from pathlib import Path
+import os.path
 import pickle
+
+# Load data file
+data_file = 'C:/Users/44079/Work/Leicester/infraslow-dynamics/04_data_analysis/005_ibl_bwm/bwmPreprocessedData.pkl'
+if os.path.isfile(data_file):
+  with open(data_file, 'rb') as f:
+    bwmPreprocessedData = pickle.load(f)
+    experiment_data = bwmPreprocessedData['experiment_data']
+else:
+  experiment_data = list()
 
 # Set up network connection
 ONE.setup(base_url='https://openalyx.internationalbrainlab.org', silent=True)
@@ -36,7 +45,6 @@ unitTable_df = bwm_units(one)
 eids = probeTable_df.eid.unique()
 
 # Load experiment data
-experiment_data = list()
 for iExp in range(len(eids)):
   pprint('Progress: ' + str(iExp) + '/' + str(len(eids)))
   eid = eids[iExp]
@@ -45,6 +53,7 @@ for iExp in range(len(eids)):
   try:
     passive_times = one.load_dataset(eid, '*passivePeriods*', collection='alf')
   except:
+    pprint('Skipping experiment ' + str(iExp))
     continue
   SP_times = passive_times['spontaneousActivity']
   if len(SP_times):
@@ -104,6 +113,7 @@ for iExp in range(len(eids)):
                     channels_labels=channels.labels,
                     channels_brain_areas=ba.regions.id2acronym(
                       channels.brainLocationIds_ccf_2017, mapping='Beryl'))
+      subject_id = probeTable_df.subject[probe_mask]
     else:
       probe1 = dict()
     
@@ -130,18 +140,16 @@ for iExp in range(len(eids)):
                                 right_camera=right_camera,
                                 spontaneous_activity_times=SP_times,
                                 eid=eid,
-                                subject_id=subject_id))
+                                subject_id=subject_id,
+                                iteration_state=iExp))
 
-# Store probe and unit tables
-bwmPreprocessedData = dict(experiment_data=experiment_data,
-                           probeTable=probeTable_df,
-                           unitTable=unitTable_df)
+    # Store probe and unit tables
+    bwmPreprocessedData = dict(experiment_data=experiment_data,
+                               probeTable=probeTable_df,
+                               unitTable=unitTable_df,
+                               iteration_state=iExp)
 
 # Save data
-data_file = 'C:/Users/44079/Work/Leicester/infraslow-dynamics/04_data_analysis/005_ibl_bwm/bwmPreprocessedData.pkl'
 with open(data_file, 'wb') as f:
   pickle.dump(bwmPreprocessedData, f)
 pprint('Data loading complete.')
-
-#with open('bwmPreprocessedData.pkl', 'rb') as f:
-#    loaded_dict = pickle.load(f)
