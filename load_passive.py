@@ -60,8 +60,8 @@ for iExp in range(len(eids)):
     
     # Probe 1
     probe_name = 'probe00'
-    collections = one.list_collections(eid)
-    if f'alf/{probe_name}/pykilosort' in collections:
+    datasets = one.list_datasets(eid)
+    if f'alf/{probe_name}/pykilosort/spikes.times.npy' in datasets:
       probe_mask = np.logical_and(probeTable_df.eid==eid,
                                   probeTable_df.probe_name==probe_name)
       spikes = one.load_object(eid, 'spikes', collection=f'alf/{probe_name}/pykilosort', 
@@ -90,7 +90,7 @@ for iExp in range(len(eids)):
     
     # Probe 2
     probe_name = 'probe01'
-    if f'alf/{probe_name}/pykilosort' in collections:
+    if f'alf/{probe_name}/pykilosort/spikes.times.npy' in datasets:
       probe_mask = np.logical_and(probeTable_df.eid==eid,
                                   probeTable_df.probe_name==probe_name)
       spikes = one.load_object(eid, 'spikes', collection=f'alf/{probe_name}/pykilosort', 
@@ -149,7 +149,8 @@ for iExp in range(len(eids)):
                                unitTable=unitTable_df,
                                iteration_state=iExp)
 
-# Save data
-with open(data_file, 'wb') as f:
-  pickle.dump(bwmPreprocessedData, f)
+    # Save data
+    with open(data_file, 'wb') as f:
+      pickle.dump(bwmPreprocessedData, f)
+      
 pprint('Data loading complete.')
