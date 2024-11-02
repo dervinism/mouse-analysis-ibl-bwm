@@ -19,7 +19,7 @@ import os.path
 import pickle
 
 # Load data file
-data_file = 'C:/Users/44079/Work/Leicester/infraslow-dynamics/04_data_analysis/005_ibl_bwm/bwmPreprocessedData.pkl'
+data_file = 'F:/infraslow-dynamics/04_data_analysis/005_ibl_bwm/bwmPreprocessedData.pkl'
 if os.path.isfile(data_file):
   with open(data_file, 'rb') as f:
     bwmPreprocessedData = pickle.load(f)
@@ -47,6 +47,7 @@ eids = probeTable_df.eid.unique()
 # Load experiment data
 for iExp in range(len(eids)):
   pprint('Progress: ' + str(iExp) + '/' + str(len(eids)))
+  subject_id = ''
   eid = eids[iExp]
 
   # Find passive recording period
@@ -58,7 +59,7 @@ for iExp in range(len(eids)):
   SP_times = passive_times['spontaneousActivity']
   if len(SP_times):
     
-    # Probe 1
+    # Probe 0
     probe_name = 'probe00'
     datasets = one.list_datasets(eid)
     if f'alf/{probe_name}/pykilosort/spikes.times.npy' in datasets:
@@ -88,7 +89,7 @@ for iExp in range(len(eids)):
     else:
       probe0 = dict()
     
-    # Probe 2
+    # Probe 1
     probe_name = 'probe01'
     if f'alf/{probe_name}/pykilosort/spikes.times.npy' in datasets:
       probe_mask = np.logical_and(probeTable_df.eid==eid,
@@ -118,20 +119,28 @@ for iExp in range(len(eids)):
       probe1 = dict()
     
     # Load left eye pupil diameter
-    video_features = one.load_object(eid, 'leftCamera', collection='alf')
-    frame_mask = np.logical_and(video_features.times>=SP_times[0],
-                                video_features.times<=SP_times[1])
-    left_camera = dict(pupilDiameter_raw=video_features.features.pupilDiameter_raw[frame_mask],
-                       pupilDiameter_smooth=video_features.features.pupilDiameter_smooth[frame_mask],
-                       times=video_features.times[frame_mask])
+    left_camera = dict()
+    if 'alf/_ibl_leftCamera.features.pqt' in datasets:
+      video_features = one.load_object(eid, 'leftCamera', collection='alf')
+      if hasattr(video_features, 'times'):
+        frame_mask = np.logical_and(video_features.times>=SP_times[0],
+                                    video_features.times<=SP_times[1])
+        if len(frame_mask) <= len(video_features.features.pupilDiameter_raw):
+          left_camera = dict(pupilDiameter_raw=video_features.features.pupilDiameter_raw[frame_mask],
+                            pupilDiameter_smooth=video_features.features.pupilDiameter_smooth[frame_mask],
+                            times=video_features.times[frame_mask])
 
     # Load right eye pupil diameter
-    video_features = one.load_object(eid, 'rightCamera', collection='alf')
-    frame_mask = np.logical_and(video_features.times>=SP_times[0],
-                                video_features.times<=SP_times[1])
-    right_camera = dict(pupilDiameter_raw=video_features.features.pupilDiameter_raw[frame_mask],
-                        pupilDiameter_smooth=video_features.features.pupilDiameter_smooth[frame_mask],
-                        times=video_features.times[frame_mask])
+    right_camera = dict()
+    if 'alf/_ibl_rightCamera.features.pqt' in datasets:
+      video_features = one.load_object(eid, 'rightCamera', collection='alf')
+      if hasattr(video_features, 'times'):
+        frame_mask = np.logical_and(video_features.times>=SP_times[0],
+                                    video_features.times<=SP_times[1])
+        if len(frame_mask) <= len(video_features.features.pupilDiameter_raw):
+          right_camera = dict(pupilDiameter_raw=video_features.features.pupilDiameter_raw[frame_mask],
+                              pupilDiameter_smooth=video_features.features.pupilDiameter_smooth[frame_mask],
+                              times=video_features.times[frame_mask])
 
     # Store experiment (session) data in a single experiment container
     experiment_data.append(dict(probe0=probe0,
