@@ -1,107 +1,266 @@
-% Correlate neural activity with pupil area
-
-% Load parameters
+% % Correlate neural activity with pupil area
+% 
+% % Load parameters
 params
-pupilPassbandFrequency = 0.2; % 1.5
-pupilStopbandFrequency = 0.25; % 2
-averagedPupilDownsampling = true;
-alpha = 0.05; % Significance level
+% pupilPassbandFrequency = 0.2; % 1.5
+% pupilStopbandFrequency = 0.25; % 2
+% averagedPupilDownsampling = true;
+% alpha = 0.05; % Significance level
+% 
+% % Load preprocessed data
+% if ~exist('infraslowData', 'var')
+%   preprocessedDataFile = fullfile(processedDataFolder, 'bwmPreprocessedData2.mat');
+%   load(preprocessedDataFile);
+% end
+% 
+% % Load data analysis results
+% if ~exist('infraslowAnalyses', 'var')
+%   analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
+%   load(analysisResultsFile);
+% end
+% 
+% % Correlate individual unit activity with the pupil area
+% nAreas = numel(infraslowAnalyses.areaSummaries.groupedUnitInds);
+% rPearson = cell(nAreas,1);
+% pvalPearson = cell(nAreas,1);
+% rSpearman = cell(nAreas,1);
+% pvalSpearman = cell(nAreas,1);
+% for iArea = 1:nAreas
+%   disp(['Progress: ' num2str(100*iArea/nAreas) '%']);
+%   areaGroup = infraslowAnalyses.areaSummaries.areaTable.Brain_area_group{iArea};
+%   if ~strcmpi(areaGroup, '???')
+%     nUnits = size(infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}, 1);
+%     rPearson{iArea} = NaN(nUnits,1);
+%     pvalPearson{iArea} = NaN(nUnits,1);
+%     rSpearman{iArea} = NaN(nUnits,1);
+%     pvalSpearman{iArea} = NaN(nUnits,1);
+%     prevExpInd = 0;
+%     for iUnit = 1:nUnits
+% 
+%       % Get the single unit spike count
+%       expInd = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}(iUnit,1);
+%       expData = infraslowData.experimentData{expInd};
+%       if ~isempty(expData.leftPupilAreaSize) || ~isempty(expData.rightPupilAreaSize)
+%         unitInd = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}(iUnit,2);
+%         unitSpikeCounts = full(expData.spikeCounts(unitInd,:));
+%         spikeTimeBins = expData.spikeTimeBins;
+%         [unitSpikeCounts, downsampledTimes] = resampleSpikeCounts( ...
+%           unitSpikeCounts, stepsize=1/expData.samplingRate, ...
+%           newStepsize=1/downsampledRate); % Downsample spiking data
+% 
+%         % Get the pupil area size
+%         if expInd ~= prevExpInd
+%           if ~isempty(expData.leftPupilAreaSize) && ~isempty(expData.rightPupilAreaSize)
+%             pupilAreaSize = mean([expData.leftPupilAreaSize; expData.rightPupilAreaSize]);
+%           elseif ~isempty(expData.leftPupilAreaSize)
+%             pupilAreaSize = expData.leftPupilAreaSize;
+%           elseif ~isempty(expData.rightPupilAreaSize)
+%             pupilAreaSize = expData.rightPupilAreaSize;
+%           end
+% 
+%           % Filter pupil area size
+%           pupilAreaSizeFilt = pupilAreaSize;
+%           valueExists = ~isnan(pupilAreaSize);
+%           sr = 1/mean(diff(spikeTimeBins));
+%           d = designfilt('lowpassiir', ...
+%             'PassbandFrequency',pupilPassbandFrequency, ...
+%             'StopbandFrequency',pupilStopbandFrequency, ...
+%             'PassbandRipple',0.5, 'StopbandAttenuation',1, ...
+%             'DesignMethod','butter', 'SampleRate',sr);
+%           pupilAreaSizeFilt(valueExists) = filtfilt(d,pupilAreaSize(valueExists));
+% 
+%           if averagedPupilDownsampling
+%             % Average pupil area size (most accurate downsampling)
+%             averagedPupilAreaSize = movmean(pupilAreaSizeFilt, ...
+%               round(expData.samplingRate/downsampledRate), 'omitnan');
+%             downsampledPupilAreaSize = interp1(spikeTimeBins, averagedPupilAreaSize, ...
+%               downsampledTimes, 'linear', 'extrap');
+%           else
+%             % Downsample pupil area size
+%             downsampledPupilAreaSize = interp1(spikeTimeBins, pupilAreaSizeFilt, ...
+%               downsampledTimes, 'linear', 'extrap'); %#ok<*UNRCH>
+%           end
+% 
+%           %fH = figure; plot(spikeTimeBins, pupilAreaSize, 'LineWidth',0.5); hold on
+%           %plot(spikeTimeBins, pupilAreaSizeFilt, 'LineWidth',0.5);
+%           %plot(downsampledTimes, downsampledPupilAreaSize, 'LineWidth',1.5);
+%           %plot(downsampledTimes, averagedPupilAreaSize, 'LineWidth',1.5); hold off
+%           %legend('smoothed','filtered','downsampled','averaged');
+%           %close(fH);
+%         end
+%         if sum(isnan(downsampledPupilAreaSize)) == numel(downsampledPupilAreaSize)
+%           continue
+%         end
+% 
+%         % Correlate the two signals
+%         [rPearson{iArea}(iUnit), pvalPearson{iArea}(iUnit)] = ...
+%           corrMulti(downsampledPupilAreaSize, unitSpikeCounts, 'Pearson');
+%         [rSpearman{iArea}(iUnit), pvalSpearman{iArea}(iUnit)] = ...
+%           corrMulti(downsampledPupilAreaSize, unitSpikeCounts, 'Spearman');
+%       end
+% 
+%       prevExpInd = expInd;
+%     end
+%   end
+% end
+% 
+% % Work out correlated unit proportions in single areas
+% infraslowAnalyses.spikingPupilCorr.singleAreas = calcPupilCorrFractions( ...
+%   rPearson, pvalPearson, rSpearman, pvalSpearman, ...
+%   alpha, infraslowAnalyses.areaSummaries.groupedUnitInds);
+% 
+% % Group areas
+% areaGroups = unique(infraslowAnalyses.areaSummaries.areaTable.Brain_area_group);
+% nAreas = numel(areaGroups);
+% rPearsonGroups = cell(nAreas,1);
+% pvalPearsonGroups = cell(nAreas,1);
+% rSpearmanGroups = cell(nAreas,1);
+% pvalSpearmanGroups = cell(nAreas,1);
+% groupedUnitInds = cell(nAreas,1);
+% for iArea = 1:nAreas
+%   areaInds = ismember( ...
+%     infraslowAnalyses.areaSummaries.areaTable.Brain_area_group, areaGroups{iArea});
+%   rPearsonGroups{iArea} = concatenateCells(rPearson(areaInds));
+%   pvalPearsonGroups{iArea} = concatenateCells(pvalPearson(areaInds));
+%   rSpearmanGroups{iArea} = concatenateCells(rSpearman(areaInds));
+%   pvalSpearmanGroups{iArea} = concatenateCells(pvalSpearman(areaInds));
+%   groupedUnitInds{iArea} = concatenateCells( ...
+%     infraslowAnalyses.areaSummaries.groupedUnitInds(areaInds));
+% end
+% areas2keep = ~ismember(areaGroups, '???');
+% rPearsonGroups = rPearsonGroups(areas2keep);
+% pvalPearsonGroups = pvalPearsonGroups(areas2keep);
+% rSpearmanGroups = rSpearmanGroups(areas2keep);
+% pvalSpearmanGroups = pvalSpearmanGroups(areas2keep);
+% groupedUnitInds = groupedUnitInds(areas2keep);
+% areaGroups = areaGroups(areas2keep);
+% 
+% % Work out correlated unit proportions in area groups
+% infraslowAnalyses.spikingPupilCorr.areaGroups = calcPupilCorrFractions( ...
+%   rPearsonGroups, pvalPearsonGroups, rSpearmanGroups, pvalSpearmanGroups, ...
+%   alpha, groupedUnitInds);
+% infraslowAnalyses.spikingPupilCorr.areaGroups.areaAcronyms = areaGroups;
 
-% Load preprocessed data
-preprocessedDataFile = fullfile(processedDataFolder, 'bwmPreprocessedData2.mat');
-load(preprocessedDataFile);
-
-% Load data analysis results
-analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
-load(analysisResultsFile);
-
-% Correlate individual unit activity with the pupil area
-nAreas = numel(infraslowAnalyses.areaSummaries.groupedUnitInds);
-rPearson = cell(nAreas,1);
-pvalPearson = cell(nAreas,1);
-rSpearman = cell(nAreas,1);
-pvalSpearman = cell(nAreas,1);
+% Select areas of interest
+nAreas = numel(areasOI);
+rPearsonOI = cell(nAreas,1);
+pvalPearsonOI = cell(nAreas,1);
+rSpearmanOI = cell(nAreas,1);
+pvalSpearmanOI = cell(nAreas,1);
+groupedUnitInds = cell(nAreas,1);
 for iArea = 1:nAreas
-  disp(['Progress: ' num2str(100*iArea/nAreas) '%']);
-  areaGroup = infraslowAnalyses.areaSummaries.areaTable.Brain_area_group{iArea};
-  if ~strcmpi(areaGroup, '???')
-    nUnits = size(infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}, 1);
-    rPearson{iArea} = NaN(nUnits,1);
-    pvalPearson{iArea} = NaN(nUnits,1);
-    rSpearman{iArea} = NaN(nUnits,1);
-    pvalSpearman{iArea} = NaN(nUnits,1);
-    prevExpInd = 0;
-    for iUnit = 1:nUnits
-
-      % Get the single unit spike count
-      expInd = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}(iUnit,1);
-      expData = infraslowData.experimentData{expInd};
-      if ~isempty(expData.leftPupilAreaSize) || ~isempty(expData.rightPupilAreaSize)
-        unitInd = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}(iUnit,2);
-        unitSpikeCounts = full(expData.spikeCounts(unitInd,:));
-        spikeTimeBins = expData.spikeTimeBins;
-        [unitSpikeCounts, downsampledTimes] = resampleSpikeCounts( ...
-          unitSpikeCounts, stepsize=1/expData.samplingRate, ...
-          newStepsize=1/downsampledRate); % Downsample spiking data
-        downsampledTimes = downsampledTimes - 0.5/downsampledRate;
-
-        % Get the pupil area size
-        if expInd ~= prevExpInd
-          if ~isempty(expData.leftPupilAreaSize) && ~isempty(expData.rightPupilAreaSize)
-            pupilAreaSize = mean([expData.leftPupilAreaSize; expData.rightPupilAreaSize]);
-          elseif ~isempty(expData.leftPupilAreaSize)
-            pupilAreaSize = expData.leftPupilAreaSize;
-          elseif ~isempty(expData.rightPupilAreaSize)
-            pupilAreaSize = expData.rightPupilAreaSize;
-          end
-
-          % Filter pupil area size
-          pupilAreaSizeFilt = pupilAreaSize;
-          valueExists = ~isnan(pupilAreaSize);
-          sr = 1/mean(diff(spikeTimeBins));
-          d = designfilt('lowpassiir', ...
-            'PassbandFrequency',pupilPassbandFrequency, ...
-            'StopbandFrequency',pupilStopbandFrequency, ...
-            'PassbandRipple',0.5, 'StopbandAttenuation',1, ...
-            'DesignMethod','butter', 'SampleRate',sr);
-          pupilAreaSizeFilt(valueExists) = filtfilt(d,pupilAreaSize(valueExists));
-
-          if averagedPupilDownsampling
-            % Average pupil area size (most accurate downsampling)
-            averagedPupilAreaSize = movmean(pupilAreaSizeFilt, ...
-              round(expData.samplingRate/downsampledRate), 'omitnan');
-            downsampledPupilAreaSize = interp1(spikeTimeBins, averagedPupilAreaSize, ...
-              downsampledTimes, 'linear', 'extrap');
-          else
-            % Downsample pupil area size
-            downsampledPupilAreaSize = interp1(spikeTimeBins, pupilAreaSizeFilt, ...
-              downsampledTimes, 'linear', 'extrap'); %#ok<*UNRCH>
-          end
-
-          %fH = figure; plot(spikeTimeBins, pupilAreaSize, 'LineWidth',0.5); hold on
-          %plot(spikeTimeBins, pupilAreaSizeFilt, 'LineWidth',0.5);
-          %plot(downsampledTimes, downsampledPupilAreaSize, 'LineWidth',1.5);
-          %plot(downsampledTimes, averagedPupilAreaSize, 'LineWidth',1.5); hold off
-          %legend('smoothed','filtered','downsampled','averaged');
-          %close(fH);
-        end
-        if sum(isnan(downsampledPupilAreaSize)) == numel(downsampledPupilAreaSize)
-          continue
-        end
-
-        % Correlate the two signals
-        [rPearson{iArea}(iUnit), pvalPearson{iArea}(iUnit)] = ...
-          corrMulti(downsampledPupilAreaSize, unitSpikeCounts, 'Pearson');
-        [rSpearman{iArea}(iUnit), pvalSpearman{iArea}(iUnit)] = ...
-          corrMulti(downsampledPupilAreaSize, unitSpikeCounts, 'Spearman');
-      end
-
-      prevExpInd = expInd;
-    end
+  areaInds = []; %#ok<*NASGU>
+  if ismember(areasOI{iArea}, infraslowAnalyses.areaSummaries.areaTable.Brain_area_type)
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_type, areasOI{iArea});
+  elseif ismember(areasOI{iArea}, infraslowAnalyses.areaSummaries.areaTable.Brain_area_group)
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_group, areasOI{iArea});
+  elseif strcmpi(areasOI{iArea}, 'sensory-Th')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_type, 'sensory') & ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_group, 'Th');
+  elseif strcmpi(areasOI{iArea}, 'association-Th')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_type, 'association') & ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_group, 'Th');
+  elseif strcmpi(areasOI{iArea}, 'motor-Th')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_type, 'motor') & ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_group, 'Th');
+  elseif strcmpi(areasOI{iArea}, 'sensory-nCx')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_type, 'sensory') & ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_group, 'nCx');
+  elseif strcmpi(areasOI{iArea}, 'association-nCx')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_type, 'association') & ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_group, 'nCx');
+  elseif strcmpi(areasOI{iArea}, 'motor-nCx')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_type, 'motor') & ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_group, 'nCx');
+  elseif strcmpi(areasOI{iArea}, 'association-paCx')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_type, 'association') & ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_group, 'paCx');
+  elseif strcmpi(areasOI{iArea}, 'sensory-pCx')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_type, 'sensory') & ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_group, 'pCx');
+  elseif strcmpi(areasOI{iArea}, 'association-pCx')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_type, 'association') & ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_group, 'pCx');
+  elseif strcmpi(areasOI{iArea}, 'VPL-VPM')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'VPL') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'VPM');
+  elseif strcmpi(areasOI{iArea}, 'LG')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'LGd') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'LGv');
+  elseif strcmpi(areasOI{iArea}, 'VPL-VPM-LG-PO-LP')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'VPL') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'VPM') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'LG') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'PO') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'LP');
+  elseif strcmpi(areasOI{iArea}, 'SSp-body')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'SSp-ll') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'SSp-m') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'SSp-n') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'SSp-tr') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'SSp-ul') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'SSp-un');
+  elseif strcmpi(areasOI{iArea}, 'SSp')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'SSp-bfd') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'SSp-ll') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'SSp-m') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'SSp-n') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'SSp-tr') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'SSp-ul') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'SSp-un');
+  elseif strcmpi(areasOI{iArea}, 'RSPd-RSPv')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'RSPd') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'RSPv');
+  elseif strcmpi(areasOI{iArea}, 'RSP')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'RSPagl') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'RSPd') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'RSPv');
+  elseif strcmpi(areasOI{iArea}, 'CA-DG')
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'CA1') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'CA2') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'CA3') | ...
+      ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, 'DG');
+  else
+    areaInds = ismember(infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym, areasOI{iArea});
   end
+  rPearsonOI{iArea} = concatenateCells(rPearson(areaInds));
+  pvalPearsonOI{iArea} = concatenateCells(pvalPearson(areaInds));
+  rSpearmanOI{iArea} = concatenateCells(rSpearman(areaInds));
+  pvalSpearmanOI{iArea} = concatenateCells(pvalSpearman(areaInds));
+  groupedUnitInds{iArea} = concatenateCells( ...
+    infraslowAnalyses.areaSummaries.groupedUnitInds(areaInds));
 end
 
-% Work out correlated unit proportions
+% Work out correlated unit proportions in area groups
+infraslowAnalyses.spikingPupilCorr.areasOI = calcPupilCorrFractions( ...
+  rPearsonOI, pvalPearsonOI, rSpearmanOI, pvalSpearmanOI, ...
+  alpha, groupedUnitInds);
+infraslowAnalyses.spikingPupilCorr.areaOI.areaAcronyms = areasOI;
+
+% Save the data
+save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');
+
+% Sort areas large to small positive fraction
+% [sortedAreas, areaOrder] = sort( ...
+%   infraslowAnalyses.spikingPupilCorr.singleAreas.positiveSpearmanFractionsMeans(:,1), 'descend');
+% areaOrder = areaOrder(~isnan(sortedAreas));
+% infraslowAnalyses.areaSummaries.areaTable.Brain_area_name(areaOrder)
+
+[sortedAreas, areaOrder] = sort( ...
+  infraslowAnalyses.spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(:,1), 'descend');
+areaOrder = areaOrder(~isnan(sortedAreas));
+fractionTable = table(areasOI(areaOrder), ...
+  infraslowAnalyses.spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(areaOrder,1), ...
+  'VariableNames', {'Brain_area', 'Positive_cell_fraction'})
+
+
+
+%% Local functions
+function dataSummary = calcPupilCorrFractions(rPearson, pvalPearson, ...
+  rSpearman, pvalSpearman, alpha, groupedUnitInds)
+
+% Initialise data containers
+nAreas = numel(rPearson);
 positivePearsonFractions = NaN(nAreas,2);
 negativePearsonFractions = NaN(nAreas,2);
 neutralPearsonFractions = NaN(nAreas,2);
@@ -130,63 +289,70 @@ for iArea = 1:nAreas
   disp(['Progress: ' num2str(100*iArea/nAreas) '%']);
 
   % Work out overall proportions
-  if ~isempty(rPearson{iArea})
+  if ~isempty(rPearson{iArea}) && any(~isnan(rPearson{iArea}))
     positivePearsonFractions(iArea,1) = ...
-      sum(rPearson{iArea} > 0)/numel(rPearson{iArea});
+      sum(rPearson{iArea} > 0)/sum(~isnan(rPearson{iArea}));
     negativePearsonFractions(iArea,1) = ...
-      sum(rPearson{iArea} < 0)/numel(rPearson{iArea});
+      sum(rPearson{iArea} < 0)/sum(~isnan(rPearson{iArea}));
     neutralPearsonFractions(iArea,1) = ...
-      1 - positivePearsonFractions(iArea,1) - negativePearsonFractions(iArea,1);
+      sum(~isnan(rPearson{iArea}))/numel(rPearson{iArea}) - ...
+      positivePearsonFractions(iArea,1) - negativePearsonFractions(iArea,1);
     positivePearsonFractions(iArea,2) = ...
-      sum(rPearson{iArea} > 0 & pvalPearson{iArea} < alpha)/numel(rPearson{iArea});
+      sum(rPearson{iArea} > 0 & pvalPearson{iArea} < alpha)/sum(~isnan(rPearson{iArea}));
     negativePearsonFractions(iArea,2) = ...
-      sum(rPearson{iArea} < 0 & pvalPearson{iArea} < alpha)/numel(rPearson{iArea});
+      sum(rPearson{iArea} < 0 & pvalPearson{iArea} < alpha)/sum(~isnan(rPearson{iArea}));
     neutralPearsonFractions(iArea,2) = ...
-      1 - positivePearsonFractions(iArea,2) - negativePearsonFractions(iArea,2);
+      sum(~isnan(rPearson{iArea}))/numel(rPearson{iArea}) - ...
+      positivePearsonFractions(iArea,2) - negativePearsonFractions(iArea,2);
 
     positiveSpearmanFractions(iArea,1) = ...
-      sum(rSpearman{iArea} > 0)/numel(rSpearman{iArea});
+      sum(rSpearman{iArea} > 0)/sum(~isnan(rSpearman{iArea}));
     negativeSpearmanFractions(iArea,1) = ...
-      sum(rSpearman{iArea} < 0)/numel(rSpearman{iArea});
+      sum(rSpearman{iArea} < 0)/sum(~isnan(rSpearman{iArea}));
     neutralSpearmanFractions(iArea,1) = ...
-      1 - positiveSpearmanFractions(iArea,1) - negativeSpearmanFractions(iArea,1);
+      sum(~isnan(rSpearman{iArea}))/numel(rSpearman{iArea}) - ...
+      positiveSpearmanFractions(iArea,1) - negativeSpearmanFractions(iArea,1);
     positiveSpearmanFractions(iArea,2) = ...
-      sum(rSpearman{iArea} > 0 & pvalSpearman{iArea} < alpha)/numel(rSpearman{iArea});
+      sum(rSpearman{iArea} > 0 & pvalSpearman{iArea} < alpha)/sum(~isnan(rSpearman{iArea}));
     negativeSpearmanFractions(iArea,2) = ...
-      sum(rSpearman{iArea} < 0 & pvalSpearman{iArea} < alpha)/numel(rSpearman{iArea});
+      sum(rSpearman{iArea} < 0 & pvalSpearman{iArea} < alpha)/sum(~isnan(rSpearman{iArea}));
     neutralSpearmanFractions(iArea,2) = ...
-      1 - positiveSpearmanFractions(iArea,2) - negativeSpearmanFractions(iArea,2);
+      sum(~isnan(rSpearman{iArea}))/numel(rSpearman{iArea}) - ...
+      positiveSpearmanFractions(iArea,2) - negativeSpearmanFractions(iArea,2);
   end
 
   % Work out proportions per recording
-  if ~isempty(rPearson{iArea})
-    recs = unique(infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}(:,1));
+  if ~isempty(rPearson{iArea}) && any(~isnan(rPearson{iArea}))
+    recs = unique(groupedUnitInds{iArea}(~isnan(rPearson{iArea}),1));
     nRecs = numel(recs);
     positivePearsonFractionsPerRec{iArea} = NaN(nRecs,2);
     negativePearsonFractionsPerRec{iArea} = NaN(nRecs,2);
     neutralPearsonFractionsPerRec{iArea} = NaN(nRecs,2);
     for iRec = 1:nRecs
-      recInds = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}(:,1) == recs(iRec);
+      recInds = groupedUnitInds{iArea}(:,1) == recs(iRec) & ...
+        ~isnan(rPearson{iArea});
       positivePearsonFractionsPerRec{iArea}(iRec,1) = ...
-        sum(rPearson{iArea} > 0 & recInds)/numel(rPearson{iArea});
+        sum(rPearson{iArea} > 0 & recInds)/sum(recInds);
       negativePearsonFractionsPerRec{iArea}(iRec,1) = ...
-        sum(rPearson{iArea} < 0 & recInds)/numel(rPearson{iArea});
+        sum(rPearson{iArea} < 0 & recInds)/sum(recInds);
       neutralPearsonFractionsPerRec{iArea}(iRec,1) = ...
-        1 - positivePearsonFractionsPerRec{iArea}(iRec,1) - negativePearsonFractionsPerRec{iArea}(iRec,1);
+        1 - positivePearsonFractionsPerRec{iArea}(iRec,1) - ...
+        negativePearsonFractionsPerRec{iArea}(iRec,1);
       positivePearsonFractionsPerRec{iArea}(iRec,2) = ...
-        sum(rPearson{iArea} > 0 & pvalPearson{iArea} < alpha & recInds)/numel(rPearson{iArea});
+        sum(rPearson{iArea} > 0 & pvalPearson{iArea} < alpha & recInds)/sum(recInds);
       negativePearsonFractionsPerRec{iArea}(iRec,2) = ...
-        sum(rPearson{iArea} < 0 & pvalPearson{iArea} < alpha & recInds)/numel(rPearson{iArea});
+        sum(rPearson{iArea} < 0 & pvalPearson{iArea} < alpha & recInds)/sum(recInds);
       neutralPearsonFractionsPerRec{iArea}(iRec,2) = ...
-        1 - positivePearsonFractionsPerRec{iArea}(iRec,2) - negativePearsonFractionsPerRec{iArea}(iRec,2);
+        1 - positivePearsonFractionsPerRec{iArea}(iRec,2) - ...
+        negativePearsonFractionsPerRec{iArea}(iRec,2);
     end
     if nRecs == 1
       positivePearsonFractionsMeans(iArea,:) = positivePearsonFractionsPerRec{iArea};
-      positivePearsonFractionsCI95Temp = [0 0];
+      positivePearsonFractionsCI95(iArea,:) = [0 0];
       negativePearsonFractionsMeans(iArea,:) = negativePearsonFractionsPerRec{iArea};
-      negativePearsonFractionsCI95Temp = [0 0];
+      negativePearsonFractionsCI95(iArea,:) = [0 0];
       neutralPearsonFractionsMeans(iArea,:) = neutralPearsonFractionsPerRec{iArea};
-      neutralPearsonFractionsCI95Temp = [0 0];
+      neutralPearsonFractionsCI95(iArea,:) = [0 0];
     else
       [positivePearsonFractionsMeans(iArea,:), positivePearsonFractionsCI95Temp] = ...
         datamean(positivePearsonFractionsPerRec{iArea});
@@ -203,27 +369,29 @@ for iArea = 1:nAreas
     negativeSpearmanFractionsPerRec{iArea} = NaN(nRecs,2);
     neutralSpearmanFractionsPerRec{iArea} = NaN(nRecs,2);
     for iRec = 1:nRecs
-      recInds = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}(:,1) == recs(iRec);
+      recInds = groupedUnitInds{iArea}(:,1) == recs(iRec);
       positiveSpearmanFractionsPerRec{iArea}(iRec,1) = ...
-        sum(rSpearman{iArea} > 0 & recInds)/numel(rSpearman{iArea});
+        sum(rSpearman{iArea} > 0 & recInds)/sum(recInds);
       negativeSpearmanFractionsPerRec{iArea}(iRec,1) = ...
-        sum(rSpearman{iArea} < 0 & recInds)/numel(rSpearman{iArea});
+        sum(rSpearman{iArea} < 0 & recInds)/sum(recInds);
       neutralSpearmanFractionsPerRec{iArea}(iRec,1) = ...
-        1 - positiveSpearmanFractionsPerRec{iArea}(iRec,1) - negativeSpearmanFractionsPerRec{iArea}(iRec,1);
+        1 - positiveSpearmanFractionsPerRec{iArea}(iRec,1) - ...
+        negativeSpearmanFractionsPerRec{iArea}(iRec,1);
       positiveSpearmanFractionsPerRec{iArea}(iRec,2) = ...
-        sum(rSpearman{iArea} > 0 & pvalSpearman{iArea} < alpha & recInds)/numel(rSpearman{iArea});
+        sum(rSpearman{iArea} > 0 & pvalSpearman{iArea} < alpha & recInds)/sum(recInds);
       negativeSpearmanFractionsPerRec{iArea}(iRec,2) = ...
-        sum(rSpearman{iArea} < 0 & pvalSpearman{iArea} < alpha & recInds)/numel(rSpearman{iArea});
+        sum(rSpearman{iArea} < 0 & pvalSpearman{iArea} < alpha & recInds)/sum(recInds);
       neutralSpearmanFractionsPerRec{iArea}(iRec,2) = ...
-        1 - positiveSpearmanFractionsPerRec{iArea}(iRec,2) - negativeSpearmanFractionsPerRec{iArea}(iRec,2);
+        1 - positiveSpearmanFractionsPerRec{iArea}(iRec,2) - ...
+        negativeSpearmanFractionsPerRec{iArea}(iRec,2);
     end
     if nRecs == 1
       positiveSpearmanFractionsMeans(iArea,:) = positiveSpearmanFractionsPerRec{iArea};
-      positiveSpearmanFractionsCI95Temp = [0 0];
+      positiveSpearmanFractionsCI95(iArea,:) = [0 0];
       negativeSpearmanFractionsMeans(iArea,:) = negativeSpearmanFractionsPerRec{iArea};
-      negativeSpearmanFractionsCI95Temp = [0 0];
+      negativeSpearmanFractionsCI95(iArea,:) = [0 0];
       neutralSpearmanFractionsMeans(iArea,:) = neutralSpearmanFractionsPerRec{iArea};
-      neutralSpearmanFractionsCI95Temp = [0 0];
+      neutralSpearmanFractionsCI95(iArea,:) = [0 0];
     else
       [positiveSpearmanFractionsMeans(iArea,:), positiveSpearmanFractionsCI95Temp] = ...
         datamean(positiveSpearmanFractionsPerRec{iArea});
@@ -238,38 +406,37 @@ for iArea = 1:nAreas
   end
 end
 
-% Save the data
-infraslowAnalyses.spikingPupilCorr.rPearson = rPearson;
-infraslowAnalyses.spikingPupilCorr.pvalPearson = pvalPearson;
-infraslowAnalyses.spikingPupilCorr.rSpearman = rSpearman;
-infraslowAnalyses.spikingPupilCorr.pvalSpearman = pvalSpearman;
+% Store single area data
+dataSummary.rPearson = rPearson;
+dataSummary.pvalPearson = pvalPearson;
+dataSummary.rSpearman = rSpearman;
+dataSummary.pvalSpearman = pvalSpearman;
 
-infraslowAnalyses.spikingPupilCorr.positivePearsonFractions = positivePearsonFractions;
-infraslowAnalyses.spikingPupilCorr.negativePearsonFractions = negativePearsonFractions;
-infraslowAnalyses.spikingPupilCorr.neutralPearsonFractions = neutralPearsonFractions;
-infraslowAnalyses.spikingPupilCorr.positiveSpearmanFractions = positiveSpearmanFractions;
-infraslowAnalyses.spikingPupilCorr.negativeSpearmanFractions = negativeSpearmanFractions;
-infraslowAnalyses.spikingPupilCorr.neutralSpearmanFractions = neutralSpearmanFractions;
+dataSummary.positivePearsonFractions = positivePearsonFractions;
+dataSummary.negativePearsonFractions = negativePearsonFractions;
+dataSummary.neutralPearsonFractions = neutralPearsonFractions;
+dataSummary.positiveSpearmanFractions = positiveSpearmanFractions;
+dataSummary.negativeSpearmanFractions = negativeSpearmanFractions;
+dataSummary.neutralSpearmanFractions = neutralSpearmanFractions;
 
-infraslowAnalyses.spikingPupilCorr.positivePearsonFractionsPerRec = positivePearsonFractionsPerRec;
-infraslowAnalyses.spikingPupilCorr.negativePearsonFractionsPerRec = negativePearsonFractionsPerRec;
-infraslowAnalyses.spikingPupilCorr.neutralPearsonFractionsPerRec = neutralPearsonFractionsPerRec;
-infraslowAnalyses.spikingPupilCorr.positiveSpearmanFractionsPerRec = positiveSpearmanFractionsPerRec;
-infraslowAnalyses.spikingPupilCorr.negativeSpearmanFractionsPerRec = negativeSpearmanFractionsPerRec;
-infraslowAnalyses.spikingPupilCorr.neutralSpearmanFractionsPerRec = neutralSpearmanFractionsPerRec;
+dataSummary.positivePearsonFractionsPerRec = positivePearsonFractionsPerRec;
+dataSummary.negativePearsonFractionsPerRec = negativePearsonFractionsPerRec;
+dataSummary.neutralPearsonFractionsPerRec = neutralPearsonFractionsPerRec;
+dataSummary.positiveSpearmanFractionsPerRec = positiveSpearmanFractionsPerRec;
+dataSummary.negativeSpearmanFractionsPerRec = negativeSpearmanFractionsPerRec;
+dataSummary.neutralSpearmanFractionsPerRec = neutralSpearmanFractionsPerRec;
 
-infraslowAnalyses.spikingPupilCorr.positivePearsonFractionsMeans = positivePearsonFractionsMeans;
-infraslowAnalyses.spikingPupilCorr.negativePearsonFractionsMeans = negativePearsonFractionsMeans;
-infraslowAnalyses.spikingPupilCorr.neutralPearsonFractionsMeans = neutralPearsonFractionsMeans;
-infraslowAnalyses.spikingPupilCorr.positiveSpearmanFractionsMeans = positiveSpearmanFractionsMeans;
-infraslowAnalyses.spikingPupilCorr.negativeSpearmanFractionsMeans = negativeSpearmanFractionsMeans;
-infraslowAnalyses.spikingPupilCorr.neutralSpearmanFractionsMeans = neutralSpearmanFractionsMeans;
+dataSummary.positivePearsonFractionsMeans = positivePearsonFractionsMeans;
+dataSummary.negativePearsonFractionsMeans = negativePearsonFractionsMeans;
+dataSummary.neutralPearsonFractionsMeans = neutralPearsonFractionsMeans;
+dataSummary.positiveSpearmanFractionsMeans = positiveSpearmanFractionsMeans;
+dataSummary.negativeSpearmanFractionsMeans = negativeSpearmanFractionsMeans;
+dataSummary.neutralSpearmanFractionsMeans = neutralSpearmanFractionsMeans;
 
-infraslowAnalyses.spikingPupilCorr.positivePearsonFractionsCI95 = positivePearsonFractionsCI95;
-infraslowAnalyses.spikingPupilCorr.negativePearsonFractionsCI95 = negativePearsonFractionsCI95;
-infraslowAnalyses.spikingPupilCorr.neutralPearsonFractionsCI95 = neutralPearsonFractionsCI95;
-infraslowAnalyses.spikingPupilCorr.positiveSpearmanFractionsCI95 = positiveSpearmanFractionsCI95;
-infraslowAnalyses.spikingPupilCorr.negativeSpearmanFractionsCI95 = negativeSpearmanFractionsCI95;
-infraslowAnalyses.spikingPupilCorr.neutralSpearmanFractionsCI95 = neutralSpearmanFractionsCI95;
-
-save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');
+dataSummary.positivePearsonFractionsCI95 = positivePearsonFractionsCI95;
+dataSummary.negativePearsonFractionsCI95 = negativePearsonFractionsCI95;
+dataSummary.neutralPearsonFractionsCI95 = neutralPearsonFractionsCI95;
+dataSummary.positiveSpearmanFractionsCI95 = positiveSpearmanFractionsCI95;
+dataSummary.negativeSpearmanFractionsCI95 = negativeSpearmanFractionsCI95;
+dataSummary.neutralSpearmanFractionsCI95 = neutralSpearmanFractionsCI95;
+end

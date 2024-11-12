@@ -71,8 +71,8 @@ for iArea = 1:nAreas
 end
 
 % Area table
-areaTable = table(areaLabels(:,1), uniqueBrainAreas, fullAreaNames, unitCountSum(:,1), unitCountSum(:,2), ...
-  'VariableNames', {'Brain_area_group', 'Brain_area_acronym', 'Brain_area_name', 'Total_unit_count', 'Good_unit_count'});
+areaTable = table(areaLabels(:,1), uniqueBrainAreas, fullAreaNames, areaLabels(:,4), unitCountSum(:,1), unitCountSum(:,2), ...
+  'VariableNames', {'Brain_area_group', 'Brain_area_acronym', 'Brain_area_name', 'Brain_area_type', 'Total_unit_count', 'Good_unit_count'});
 
 % Save area table and unit indices
 analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
