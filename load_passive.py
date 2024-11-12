@@ -19,7 +19,8 @@ import os.path
 import pickle
 
 # Load data file
-data_file = 'F:/infraslow-dynamics/04_data_analysis/005_ibl_bwm/bwmPreprocessedData.pkl'
+#data_file = 'F:/infraslow-dynamics/04_data_analysis/005_ibl_bwm/bwmPreprocessedData.pkl'
+data_file = 'C:/Users/44079/Work/Leicester/infraslow-dynamics/04_data_analysis/005_ibl_bwm/bwmPreprocessedData.pkl'
 if os.path.isfile(data_file):
   with open(data_file, 'rb') as f:
     bwmPreprocessedData = pickle.load(f)
@@ -141,12 +142,33 @@ for iExp in range(len(eids)):
           right_camera = dict(pupilDiameter_raw=video_features.features.pupilDiameter_raw[frame_mask],
                               pupilDiameter_smooth=video_features.features.pupilDiameter_smooth[frame_mask],
                               times=video_features.times[frame_mask])
+          
+    # Load wheel movement data
+    wheel_data = dict()
+    if 'alf/_ibl_wheel.position.npy' in datasets:
+      wheel_position = one.load_object(eid, 'wheel', collection='alf')
+      wheel_moves = one.load_object(eid, 'wheelMoves', collection='alf')
+      wheel_moves.move_intervals = np.empty([0,2])
+      for iInterval in range(len(wheel_moves.intervals)):
+        interval = wheel_moves.intervals[iInterval,:]
+        if interval[1] > SP_times[0] and interval[0] < SP_times[1]:
+          interval = np.array([[max(SP_times[0], interval[0]), min(SP_times[1], interval[1])]])
+          wheel_moves.move_intervals = np.append(wheel_moves.move_intervals,
+                                                 interval, axis=0)
+      if hasattr(wheel_position, 'times'):
+        frame_mask = np.logical_and(wheel_position.times>=SP_times[0],
+                                    wheel_position.times<=SP_times[1])
+        if len(frame_mask) <= len(wheel_position.position):
+          wheel_data = dict(position=wheel_position.position[frame_mask],
+                            times=wheel_position.timestamps[frame_mask],
+                            move_intervals=wheel_moves.move_intervals)
 
     # Store experiment (session) data in a single experiment container
     experiment_data.append(dict(probe0=probe0,
                                 probe1=probe1,
                                 left_camera=left_camera,
                                 right_camera=right_camera,
+                                wheel=wheel_data,
                                 spontaneous_activity_times=SP_times,
                                 eid=eid,
                                 subject_id=subject_id,
