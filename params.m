@@ -1,8 +1,8 @@
 % Commonly used data analysis parameters
 
 % IO
-processedDataFolder = 'C:\Users\44079\Work\Leicester\infraslow-dynamics\04_data_analysis\005_ibl_bwm';
-figFolder = 'C:\Users\44079\Work\Leicester\infraslow-dynamics\05_figures\005_ibl_bwm';
+processedDataFolder = 'C:\Users\44079\Work\Leicester\infraslow-dynamics\04_data_analysis\004_ibl_bwm';
+figFolder = 'C:\Users\44079\Work\Leicester\infraslow-dynamics\05_figures\004_ibl_bwm';
 
 % Pupil correlation parameters
 downsampledRate = 0.2;

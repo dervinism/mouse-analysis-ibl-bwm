@@ -6,6 +6,7 @@ pupilPassbandFrequency = 0.2; % 1.5
 pupilStopbandFrequency = 0.25; % 2
 averagedPupilDownsampling = true;
 alpha = 0.05; % Significance level
+excludeMovement = true;
 
 % Load preprocessed data
 if ~exist('infraslowData', 'var')
@@ -44,6 +45,11 @@ for iArea = 1:nAreas
         unitInd = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}(iUnit,2);
         unitSpikeCounts = full(expData.spikeCounts(unitInd,:));
         spikeTimeBins = expData.spikeTimeBins;
+        if excludeMovement
+          [spikeTimeBins, noMovementInds] = selectArrayValues( ...
+            spikeTimeBins, expData.noMovementIntervals);
+          noMovementSpikeCounts = unitSpikeCounts(noMovementInds);
+        end
         [unitSpikeCounts, downsampledTimes] = resampleSpikeCounts( ...
           unitSpikeCounts, stepsize=1/expData.samplingRate, ...
           newStepsize=1/downsampledRate); % Downsample spiking data
@@ -58,10 +64,10 @@ for iArea = 1:nAreas
             pupilAreaSize = expData.rightPupilAreaSize;
           end
 
-          % Filter pupil area size
+          % Filter the pupil area size
           pupilAreaSizeFilt = pupilAreaSize;
           valueExists = ~isnan(pupilAreaSize);
-          sr = 1/mean(diff(spikeTimeBins));
+          sr = 1/mean(diff(expData.spikeTimeBins));
           d = designfilt('lowpassiir', ...
             'PassbandFrequency',pupilPassbandFrequency, ...
             'StopbandFrequency',pupilStopbandFrequency, ...
@@ -69,14 +75,19 @@ for iArea = 1:nAreas
             'DesignMethod','butter', 'SampleRate',sr);
           pupilAreaSizeFilt(valueExists) = filtfilt(d,pupilAreaSize(valueExists));
 
+          % Exclude movement periods
+          if excludeMovement
+            pupilAreaSizeFilt = pupilAreaSizeFilt(noMovementInds);
+          end
+
           if averagedPupilDownsampling
-            % Average pupil area size (most accurate downsampling)
+            % Average the pupil area size (most accurate downsampling)
             averagedPupilAreaSize = movmean(pupilAreaSizeFilt, ...
               round(expData.samplingRate/downsampledRate), 'omitnan');
             downsampledPupilAreaSize = interp1(spikeTimeBins, averagedPupilAreaSize, ...
               downsampledTimes, 'linear', 'extrap');
           else
-            % Downsample pupil area size
+            % Downsample the pupil area size
             downsampledPupilAreaSize = interp1(spikeTimeBins, pupilAreaSizeFilt, ...
               downsampledTimes, 'linear', 'extrap'); %#ok<*UNRCH>
           end
@@ -235,23 +246,24 @@ end
 infraslowAnalyses.spikingPupilCorr.areasOI = calcPupilCorrFractions( ...
   rPearsonOI, pvalPearsonOI, rSpearmanOI, pvalSpearmanOI, ...
   alpha, groupedUnitInds);
-infraslowAnalyses.spikingPupilCorr.areaOI.areaAcronyms = areasOI;
-
-% Save the data
-save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');
+infraslowAnalyses.spikingPupilCorr.areasOI.areaAcronyms = areasOI;
 
 % Sort areas large to small positive fraction
-% [sortedAreas, areaOrder] = sort( ...
-%   infraslowAnalyses.spikingPupilCorr.singleAreas.positiveSpearmanFractionsMeans(:,1), 'descend');
-% areaOrder = areaOrder(~isnan(sortedAreas));
-% infraslowAnalyses.areaSummaries.areaTable.Brain_area_name(areaOrder)
+%[sortedAreas, areaOrder] = sort( ...
+%  infraslowAnalyses.spikingPupilCorr.singleAreas.positiveSpearmanFractionsMeans(:,1), 'descend');
+%areaOrder = areaOrder(~isnan(sortedAreas));
+%infraslowAnalyses.areaSummaries.areaTable.Brain_area_name(areaOrder)
 
 [sortedAreas, areaOrder] = sort( ...
   infraslowAnalyses.spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(:,1), 'descend');
 areaOrder = areaOrder(~isnan(sortedAreas));
-fractionTable = table(areasOI(areaOrder), ...
+infraslowAnalyses.spikingPupilCorr.areasOI.fractionTable = table(areasOI(areaOrder), ...
   infraslowAnalyses.spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(areaOrder,1), ...
   'VariableNames', {'Brain_area', 'Positive_cell_fraction'}) %#ok<*NOPTS>
+
+% Save the data
+sinfraslowAnalyses.spikingPupilCorr.timeOfCompletion = datetime;
+save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');
 
 
 

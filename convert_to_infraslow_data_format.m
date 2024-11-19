@@ -3,11 +3,18 @@ samplingRate = 60;
 binSpikes = true;
 
 % I/O
-preprocessedDataFile = 'C:\Users\44079\Work\Leicester\infraslow-dynamics\04_data_analysis\005_ibl_bwm\bwmPreprocessedData.mat';
-outputDataFile = 'C:\Users\44079\Work\Leicester\infraslow-dynamics\04_data_analysis\005_ibl_bwm\bwmPreprocessedData2.mat';
+pythonDataFile = 'C:\Users\44079\Work\Leicester\infraslow-dynamics\04_data_analysis\004_ibl_bwm\bwmPreprocessedData.pkl';
+preprocessedDataFile = 'C:\Users\44079\Work\Leicester\infraslow-dynamics\04_data_analysis\004_ibl_bwm\bwmPreprocessedData.mat';
+outputDataFile = 'C:\Users\44079\Work\Leicester\infraslow-dynamics\04_data_analysis\004_ibl_bwm\bwmPreprocessedData2.mat';
 
 % Load preprocessed data
-load(preprocessedDataFile);
+if ~exist('dataStruct', 'var')
+  if ~exist(preprocessedDataFile, 'file')
+    dataStruct = pkl2mat(pythonDataFile, filename2save=preprocessedDataFile);
+  else
+    load(preprocessedDataFile);
+  end
+end
 
 % Convert preprocessed data into a more structured format
 nExperiments = numel(dataStruct.experiment_data);
@@ -54,9 +61,9 @@ for iExp = 1:nExperiments
   % Convert video data
   if ~isempty(expData) && ~isempty(fieldnames(expData))
     leftCameraData = extractVideoData(dataStruct.experiment_data{iExp}.left_camera, ...
-      expData.spikeTimeBins + dataStruct.experiment_data{1, 2}.spontaneous_activity_times(1));
+      expData.spikeTimeBins + dataStruct.experiment_data{iExp}.spontaneous_activity_times(1));
     rightCameraData = extractVideoData(dataStruct.experiment_data{iExp}.right_camera, ...
-      expData.spikeTimeBins + dataStruct.experiment_data{1, 2}.spontaneous_activity_times(1));
+      expData.spikeTimeBins + dataStruct.experiment_data{iExp}.spontaneous_activity_times(1));
     if ~isempty(leftCameraData)
       expData.leftPupilAreaSize = leftCameraData.pupilAreaSize;
     else
@@ -67,6 +74,15 @@ for iExp = 1:nExperiments
     else
       expData.rightPupilAreaSize = [];
     end
+  end
+
+  % Attach relevant wheel movement data
+  if ~isempty(expData) && ~isempty(fieldnames(expData))
+    expData.noMovementIntervals = invertIntervals( ...
+      dataStruct.experiment_data{iExp}.wheel.move_intervals, ...
+      dataStruct.experiment_data{iExp}.spontaneous_activity_times(2), ...
+      startTime=dataStruct.experiment_data{iExp}.spontaneous_activity_times(1)) - ...
+      dataStruct.experiment_data{iExp}.spontaneous_activity_times(1);
   end
 
   % Attach the remaining data

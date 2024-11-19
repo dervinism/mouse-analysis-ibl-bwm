@@ -19,8 +19,7 @@ import os.path
 import pickle
 
 # Load data file
-#data_file = 'F:/infraslow-dynamics/04_data_analysis/005_ibl_bwm/bwmPreprocessedData.pkl'
-data_file = 'C:/Users/44079/Work/Leicester/infraslow-dynamics/04_data_analysis/005_ibl_bwm/bwmPreprocessedData.pkl'
+data_file = 'D:/infraslow-dynamics/04_data_analysis/004_ibl_bwm/bwmPreprocessedData.pkl'
 if os.path.isfile(data_file):
   with open(data_file, 'rb') as f:
     bwmPreprocessedData = pickle.load(f)
@@ -142,7 +141,7 @@ for iExp in range(len(eids)):
           right_camera = dict(pupilDiameter_raw=video_features.features.pupilDiameter_raw[frame_mask],
                               pupilDiameter_smooth=video_features.features.pupilDiameter_smooth[frame_mask],
                               times=video_features.times[frame_mask])
-          
+
     # Load wheel movement data
     wheel_data = dict()
     if 'alf/_ibl_wheel.position.npy' in datasets:
@@ -155,9 +154,9 @@ for iExp in range(len(eids)):
           interval = np.array([[max(SP_times[0], interval[0]), min(SP_times[1], interval[1])]])
           wheel_moves.move_intervals = np.append(wheel_moves.move_intervals,
                                                  interval, axis=0)
-      if hasattr(wheel_position, 'times'):
-        frame_mask = np.logical_and(wheel_position.times>=SP_times[0],
-                                    wheel_position.times<=SP_times[1])
+      if hasattr(wheel_position, 'timestamps'):
+        frame_mask = np.logical_and(wheel_position.timestamps>=SP_times[0],
+                                    wheel_position.timestamps<=SP_times[1])
         if len(frame_mask) <= len(wheel_position.position):
           wheel_data = dict(position=wheel_position.position[frame_mask],
                             times=wheel_position.timestamps[frame_mask],
