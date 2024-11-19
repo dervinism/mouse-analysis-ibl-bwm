@@ -2,8 +2,10 @@
 
 % Load parameters
 params
-parallelCores = 2;
-excludeMovement = true;
+parallelCores = 1;
+pupilPassbandFrequency = 0.2; % 1.5
+pupilStopbandFrequency = 0.25; % 2
+excludeMovement = false;
 
 % Load preprocessed data
 if ~exist('infraslowData', 'var')
@@ -80,27 +82,43 @@ for iArea = 1:nAreas
         pupilAreaSizeFilt = pupilAreaSizeFilt(noMovementInds);
       end
 
-      if sum(isnan(downsampledPupilAreaSize)) == numel(downsampledPupilAreaSize)
+      % Exclude periods with no values
+      nanInds = isnan(pupilAreaSizeFilt);
+      if sum(nanInds) == numel(pupilAreaSizeFilt)
         continue
+      else
+        pupilAreaSizeFilt = pupilAreaSizeFilt(~nanInds); 
+      end
+
+      % Put spike counts into a cell array for coherence analysis
+      nUnits = size(spikeCounts,1);
+      spikeCountsCell = cell(nUnits,1);
+      for iUnit = 1:nUnits
+        spikeCountsCell{iUnit} = full(spikeCounts(iUnit,~nanInds));
       end
 
       % Coherence analysis
       [spikingPupilCoh.(areaAcronym){iRec}.fullCoherence, ...
-      spikingPupilCoh.(areaAcronym){iRec}.half1Coherence, ...
-      spikingPupilCoh.(areaAcronym){iRec}.half2Coherence, ...
-      spikingPupilCoh.(areaAcronym){iRec}.fullInterpCoherence, ...
-      spikingPupilCoh.(areaAcronym){iRec}.half1InterpCoherence, ...
-      spikingPupilCoh.(areaAcronym){iRec}.half2InterpCoherence] = ...
-      coherence(spikeCounts, pupilAreaSizeFilt, ...
-      stepsize=1/effectiveSR, startTime=times(1), freqGrid=FOI, ...
-      typespk1='pb', typespk2='c', winfactor=winfactor, ...
-      freqfactor=freqfactor, tapers=tapers, halfCoherence=true, ...
-      parallelise=parallelise);
+        spikingPupilCoh.(areaAcronym){iRec}.half1Coherence, ...
+        spikingPupilCoh.(areaAcronym){iRec}.half2Coherence, ...
+        spikingPupilCoh.(areaAcronym){iRec}.fullInterpCoherence, ...
+        spikingPupilCoh.(areaAcronym){iRec}.half1InterpCoherence, ...
+        spikingPupilCoh.(areaAcronym){iRec}.half2InterpCoherence] = ...
+        coherence(spikeCountsCell, pupilAreaSizeFilt, ...
+        stepsize=1/effectiveSR, startTime=1/effectiveSR, freqGrid=FOI, ...
+        typespk1='pbc', typespk2='c', winfactor=winfactor, ...
+        freqfactor=freqfactor, tapers=tapers, halfCoherence=true, ...
+        parallelise=parallelise);
+      spikingPupilCoh.(areaAcronym){iRec}.experimentIndex = recID;
       spikingPupilCoh.(areaAcronym){iRec}.timeOfCompletion = datetime;
     end
 
     % Save data analysis results
-    infraslowAnalyses.spikingPupilCoh.(areaAcronym){iRec} = spikingPupilCoh.(areaAcronym){iRec};
+    if excludeMovement
+      infraslowAnalyses.spikingPupilCoh_noMovement.(areaAcronym){iRec} = spikingPupilCoh.(areaAcronym){iRec};
+    else
+      infraslowAnalyses.spikingPupilCoh.(areaAcronym){iRec} = spikingPupilCoh.(areaAcronym){iRec}; %#ok<*UNRCH>
+    end
     save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');
   end
 end

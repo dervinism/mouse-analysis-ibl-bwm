@@ -6,7 +6,7 @@ pupilPassbandFrequency = 0.2; % 1.5
 pupilStopbandFrequency = 0.25; % 2
 averagedPupilDownsampling = true;
 alpha = 0.05; % Significance level
-excludeMovement = true;
+excludeMovement = false;
 
 % Load preprocessed data
 if ~exist('infraslowData', 'var')
@@ -48,7 +48,7 @@ for iArea = 1:nAreas
         if excludeMovement
           [spikeTimeBins, noMovementInds] = selectArrayValues( ...
             spikeTimeBins, expData.noMovementIntervals);
-          noMovementSpikeCounts = unitSpikeCounts(noMovementInds);
+          unitSpikeCounts = unitSpikeCounts(noMovementInds);
         end
         [unitSpikeCounts, downsampledTimes] = resampleSpikeCounts( ...
           unitSpikeCounts, stepsize=1/expData.samplingRate, ...
@@ -116,7 +116,7 @@ for iArea = 1:nAreas
 end
 
 % Work out correlated unit proportions in single areas
-infraslowAnalyses.spikingPupilCorr.singleAreas = calcPupilCorrFractions( ...
+spikingPupilCorr.singleAreas = calcPupilCorrFractions( ...
   rPearson, pvalPearson, rSpearman, pvalSpearman, ...
   alpha, infraslowAnalyses.areaSummaries.groupedUnitInds);
 
@@ -147,10 +147,10 @@ groupedUnitInds = groupedUnitInds(areas2keep);
 areaGroups = areaGroups(areas2keep);
 
 % Work out correlated unit proportions in area groups
-infraslowAnalyses.spikingPupilCorr.areaGroups = calcPupilCorrFractions( ...
+spikingPupilCorr.areaGroups = calcPupilCorrFractions( ...
   rPearsonGroups, pvalPearsonGroups, rSpearmanGroups, pvalSpearmanGroups, ...
   alpha, groupedUnitInds);
-infraslowAnalyses.spikingPupilCorr.areaGroups.areaAcronyms = areaGroups;
+spikingPupilCorr.areaGroups.areaAcronyms = areaGroups;
 
 % Select areas of interest
 nAreas = numel(areasOI);
@@ -243,26 +243,36 @@ for iArea = 1:nAreas
 end
 
 % Work out correlated unit proportions in area groups
-infraslowAnalyses.spikingPupilCorr.areasOI = calcPupilCorrFractions( ...
+spikingPupilCorr.areasOI = calcPupilCorrFractions( ...
   rPearsonOI, pvalPearsonOI, rSpearmanOI, pvalSpearmanOI, ...
   alpha, groupedUnitInds);
-infraslowAnalyses.spikingPupilCorr.areasOI.areaAcronyms = areasOI;
+spikingPupilCorr.areasOI.areaAcronyms = areasOI;
 
 % Sort areas large to small positive fraction
-%[sortedAreas, areaOrder] = sort( ...
-%  infraslowAnalyses.spikingPupilCorr.singleAreas.positiveSpearmanFractionsMeans(:,1), 'descend');
-%areaOrder = areaOrder(~isnan(sortedAreas));
-%infraslowAnalyses.areaSummaries.areaTable.Brain_area_name(areaOrder)
+[sortedAreas, areaOrder] = sort( ...
+ spikingPupilCorr.singleAreas.positiveSpearmanFractionsMeans(:,1), 'descend');
+areaOrder = areaOrder(~isnan(sortedAreas));
+spikingPupilCorr.singleAreas.fractionTable = table( ...
+  infraslowAnalyses.areaSummaries.areaTable.Brain_area_name(areaOrder), ...
+  sortedAreas(~isnan(sortedAreas)), ...
+  'VariableNames', {'Brain_area', 'Positive_cell_fraction'});
+disp(spikingPupilCorr.singleAreas.fractionTable);
 
 [sortedAreas, areaOrder] = sort( ...
-  infraslowAnalyses.spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(:,1), 'descend');
+  spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(:,1), 'descend');
 areaOrder = areaOrder(~isnan(sortedAreas));
-infraslowAnalyses.spikingPupilCorr.areasOI.fractionTable = table(areasOI(areaOrder), ...
-  infraslowAnalyses.spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(areaOrder,1), ...
-  'VariableNames', {'Brain_area', 'Positive_cell_fraction'}) %#ok<*NOPTS>
+spikingPupilCorr.areasOI.fractionTable = table(areasOI(areaOrder), ...
+  spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(areaOrder,1), ...
+  'VariableNames', {'Brain_area', 'Positive_cell_fraction'});
+disp(spikingPupilCorr.areasOI.fractionTable);
 
 % Save the data
-sinfraslowAnalyses.spikingPupilCorr.timeOfCompletion = datetime;
+spikingPupilCorr.timeOfCompletion = datetime;
+if excludeMovement
+  infraslowAnalyses.spikingPupilCorr_noMovement = spikingPupilCorr;
+else
+  infraslowAnalyses.spikingPupilCorr = spikingPupilCorr;
+end
 save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');
 
 
