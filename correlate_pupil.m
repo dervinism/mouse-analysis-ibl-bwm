@@ -62,6 +62,8 @@ for iArea = 1:nAreas
             pupilAreaSize = expData.leftPupilAreaSize;
           elseif ~isempty(expData.rightPupilAreaSize)
             pupilAreaSize = expData.rightPupilAreaSize;
+          else
+            break
           end
 
           % Filter the pupil area size

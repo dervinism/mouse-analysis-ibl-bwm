@@ -2,7 +2,7 @@
 
 % Load parameters
 params
-parallelCores = 1;
+parallelCores = 2;
 pupilPassbandFrequency = 0.2; % 1.5
 pupilStopbandFrequency = 0.25; % 2
 excludeMovement = false;
@@ -64,6 +64,10 @@ for iArea = 1:nAreas
         pupilAreaSize = expData.leftPupilAreaSize;
       elseif ~isempty(expData.rightPupilAreaSize)
         pupilAreaSize = expData.rightPupilAreaSize;
+      else
+        spikingPupilCoh.(areaAcronym){iRec}.experimentIndex = recID;
+        spikingPupilCoh.(areaAcronym){iRec}.timeOfCompletion = datetime;
+        continue
       end
 
       % Filter the pupil area size
@@ -85,6 +89,8 @@ for iArea = 1:nAreas
       % Exclude periods with no values
       nanInds = isnan(pupilAreaSizeFilt);
       if sum(nanInds) == numel(pupilAreaSizeFilt)
+        spikingPupilCoh.(areaAcronym){iRec}.experimentIndex = recID;
+        spikingPupilCoh.(areaAcronym){iRec}.timeOfCompletion = datetime;
         continue
       else
         pupilAreaSizeFilt = pupilAreaSizeFilt(~nanInds); 
