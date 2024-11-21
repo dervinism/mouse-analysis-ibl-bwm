@@ -6,6 +6,7 @@ parallelCores = 2;
 pupilPassbandFrequency = 0.2; % 1.5
 pupilStopbandFrequency = 0.25; % 2
 excludeMovement = false;
+resumeInd = 1;
 
 % Load preprocessed data
 if ~exist('infraslowData', 'var')
@@ -36,7 +37,7 @@ end
 warning('off', 'all');
 nAreas = numel(infraslowAnalyses.areaSummaries.groupedUnitInds);
 spikingPupilCoh = struct();
-for iArea = 1:nAreas
+for iArea = resumeInd:nAreas
   disp(['Progress: ' num2str(100*iArea/nAreas) '%']);
   areaGroup = infraslowAnalyses.areaSummaries.areaTable.Brain_area_group{iArea};
   areaInds = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea};
