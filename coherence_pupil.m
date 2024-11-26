@@ -42,7 +42,8 @@ for iArea = resumeInd:nAreas
   areaGroup = infraslowAnalyses.areaSummaries.areaTable.Brain_area_group{iArea};
   areaInds = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea};
   if ~strcmpi(areaGroup, '???')
-    areaAcronym = infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym{iArea};
+    areaAcronym = strrep(strrep( ...
+      infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym{iArea}, ' ', '_'), '-', '_');
     recs = unique(areaInds(:,1));
     for iRec = 1:numel(recs)
       recID = recs(iRec);

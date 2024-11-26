@@ -74,11 +74,13 @@ for iUnitArea = resumeInd:nAreas
       % Proceed area by area again
       for iUnitPopulation = 1:nAreas
         populationArea = areasOI{iUnitPopulation};
+        areaInds = getAreaInds(populationArea, infraslowAnalyses.areaSummaries.areaTable);
+        subAreasOI = infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym(areaInds);
+        unitArea = strrep(strrep(unitArea, ' ', '_'), '-', '_');
+        populationArea = strrep(strrep(populationArea, ' ', '_'), '-', '_');
         if strcmpi(unitArea, populationArea)
           continue
         end
-        areaInds = getAreaInds(populationArea, infraslowAnalyses.areaSummaries.areaTable);
-        subAreasOI = infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym(areaInds);
 
         % Get the population rate
         unitInds = ismember(expData.unitBrainAreas, subAreasOI);
