@@ -2,7 +2,7 @@
 
 % Load parameters
 params
-parallelCores = 1;
+parallelCores = 32;
 excludeMovement = false;
 resumeInd = 1;
 

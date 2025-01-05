@@ -1,5 +1,5 @@
 % Parameters
-samplingRate = 60;
+samplingRate = 80;
 binSpikes = true;
 
 % I/O

@@ -1,10 +1,11 @@
 % Coherence analysis script comparing unit spiking activity with respect to the pupil area  size
 
 % Load parameters
+addDependencies
 params
-parallelCores = 2;
-pupilPassbandFrequency = 0.2; % 1.5
-pupilStopbandFrequency = 0.25; % 2
+parallelCores = 32;
+pupilPassbandFrequency = 1.5;
+pupilStopbandFrequency = 2;
 excludeMovement = false;
 resumeInd = 1;
 
@@ -123,9 +124,9 @@ for iArea = resumeInd:nAreas
 
     % Save data analysis results
     if excludeMovement
-      infraslowAnalyses.spikingPupilCoh_noMovement.(areaAcronym){iRec} = spikingPupilCoh.(areaAcronym){iRec};
+      infraslowAnalyses.spikingPupilCoh_noMovement.(areaAcronym) = spikingPupilCoh.(areaAcronym);
     else
-      infraslowAnalyses.spikingPupilCoh.(areaAcronym){iRec} = spikingPupilCoh.(areaAcronym){iRec}; %#ok<*UNRCH>
+      infraslowAnalyses.spikingPupilCoh.(areaAcronym) = spikingPupilCoh.(areaAcronym); %#ok<*UNRCH>
     end
     save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');
   end

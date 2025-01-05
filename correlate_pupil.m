@@ -2,8 +2,8 @@
 
 % Load parameters
 params
-pupilPassbandFrequency = 0.2; % 1.5
-pupilStopbandFrequency = 0.25; % 2
+pupilPassbandFrequency = 1.5;
+pupilStopbandFrequency = 2;
 averagedPupilDownsampling = true;
 alpha = 0.05; % Significance level
 excludeMovement = false;
