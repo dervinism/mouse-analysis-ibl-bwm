@@ -1,4 +1,6 @@
-% Correlate neural activity with pupil area
+% Use this script to summarise brain areas and produce a brain area table.
+% The script can only be executed on Matlab version R2021a or higher due to
+% the use of functions with keyword-value argument pairs.
 
 % Load parameters
 params

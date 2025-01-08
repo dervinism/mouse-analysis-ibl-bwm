@@ -20,8 +20,8 @@ function areaInds = getAreaInds(areaOI, areaTable)
 %   Martynas Dervinis (martynas.dervinis@gmail.com).
 
 arguments
-  areaOI (1,:) {mustBeVector,mustBeText}
-  areaTable (244,6) {mustBeA(areaTable,'table')}
+  areaOI (1,:) %{mustBeVector,mustBeText}
+  areaTable (244,6) %{mustBeA(areaTable,'table')}
 end
 
 if ismember(areaOI, areaTable.Brain_area_type)

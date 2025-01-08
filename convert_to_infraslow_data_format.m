@@ -1,11 +1,15 @@
+% Use this script to convert data from Python to Matlab format for further
+% data analysis. The script can only be executed on Matlab version R2021a
+% or higher due to the use of functions with keyword-value argument pairs.
+
 % Parameters
 samplingRate = 80;
 binSpikes = true;
 
 % I/O
-pythonDataFile = 'C:\Users\44079\Work\Leicester\infraslow-dynamics\04_data_analysis\004_ibl_bwm\bwmPreprocessedData.pkl';
-preprocessedDataFile = 'C:\Users\44079\Work\Leicester\infraslow-dynamics\04_data_analysis\004_ibl_bwm\bwmPreprocessedData.mat';
-outputDataFile = 'C:\Users\44079\Work\Leicester\infraslow-dynamics\04_data_analysis\004_ibl_bwm\bwmPreprocessedData2.mat';
+pythonDataFile = fullfile('.', 'dependencies', 'bwmPreprocessedData.pkl');
+preprocessedDataFile = fullfile('.', 'dependencies', 'bwmPreprocessedData.mat');
+outputDataFile = fullfile('.', 'dependencies', 'bwmPreprocessedData2.mat');
 
 % Load preprocessed data
 if ~exist('dataStruct', 'var')

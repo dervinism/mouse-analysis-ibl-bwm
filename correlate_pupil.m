@@ -1,4 +1,6 @@
-% Correlate neural activity with pupil area
+% Use this script to correlate unit spiking with pupil area size.
+% The script can only be executed on Matlab version R2021a or higher due to
+% the use of functions with keyword-value argument pairs.
 
 % Load parameters
 params

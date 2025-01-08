@@ -2,3 +2,4 @@
 
 path2add = genpath([pwd filesep 'dependencies']);
 addpath(path2add);
+dependenciesAdded = true;

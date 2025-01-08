@@ -1,4 +1,5 @@
 dependencies/
+figures/
 .vscode/
 *.asv
 *.mat
