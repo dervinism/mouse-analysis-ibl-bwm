@@ -46,15 +46,16 @@ for iArea = resumeInd:nAreas
   areaGroup = infraslowAnalyses.areaSummaries.areaTable.Brain_area_group{iArea};
   areaInds = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea};
   if ~strcmpi(areaGroup, '???')
-    areaAcronym = strrep(strrep( ...
-      infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym{iArea}, ' ', '_'), '-', '_');
+    areaAcronymInit = infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym{iArea};
+    areaAcronym = strrep(strrep(areaAcronymInit, ' ', '_'), '-', '_');
     recs = unique(areaInds(:,1));
     for iRec = 1:numel(recs)
       recID = recs(iRec);
       expData = infraslowData.experimentData{recID};
 
       % Get all unit spike counts
-      spikeCounts = expData.spikeCounts;
+      unitInds = ismember(expData.unitBrainAreas, areaAcronymInit);
+      spikeCounts = expData.spikeCounts(unitInds,:);
       spikeTimeBins = expData.spikeTimeBins;
       effectiveSR = 1/mean(diff(spikeTimeBins));
       if excludeMovement
