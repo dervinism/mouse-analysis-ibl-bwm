@@ -8,7 +8,7 @@ addDependencies
 params
 parallelCores = 32;
 excludeMovement = false;
-population = 'positive'; %'all', 'positive', 'negative'
+population = 'all'; %'all', 'positive', 'negative'
 resumeInd = 1;
 
 % Load preprocessed data
@@ -44,7 +44,7 @@ warning('off', 'all');
 nRecs = numel(infraslowData.experimentData);
 
 % Proceed area by area
-areasOI = infraslowAnalyses.spikingPupilCorr.areasOI.areaAcronyms;
+areasOI = areasMinimal;
 nAreas = numel(areasOI);
 spikingSpikingCoh = struct();
 for iUnitArea = resumeInd:nAreas
