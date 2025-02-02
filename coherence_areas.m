@@ -8,7 +8,7 @@ addDependencies
 params
 parallelCores = 32;
 excludeMovement = false;
-population = 'positive'; %'all', 'positive', 'negative'
+population = 'all'; %'all', 'positive', 'negative'
 resumeInd = 1;
 
 % Load preprocessed data
@@ -90,10 +90,10 @@ for iUnitArea = resumeInd:nAreas
         end
 
         % Proceed area by area again
-        for iUnitPopulation = 1:nAreas
-          populationArea = areasOI{iUnitPopulation};
+        for iPopulationArea = 1:nAreas
+          populationArea = areasOI{iPopulationArea};
           areaInds = getAreaInds(populationArea, infraslowAnalyses.areaSummaries.areaTable);
-          subAreasOI = infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym(areaInds);
+          subAreasOI_population = infraslowAnalyses.areaSummaries.areaTable.Brain_area_acronym(areaInds);
           unitArea = strrep(strrep(unitArea, ' ', '_'), '-', '_');
           populationArea = strrep(strrep(populationArea, ' ', '_'), '-', '_');
           if strcmpi(unitArea, populationArea)
@@ -101,7 +101,7 @@ for iUnitArea = resumeInd:nAreas
           end
 
           % Get the population rate
-          unitInds = ismember(expData.unitBrainAreas, subAreasOI);
+          unitInds = ismember(expData.unitBrainAreas, subAreasOI_population);
           if strcmpi(population, 'positive')
             unitInds = unitInds & expPupilCorrData > 0;
           elseif strcmpi(population, 'negative')
@@ -123,9 +123,7 @@ for iUnitArea = resumeInd:nAreas
           recInd = numel(spikingSpikingCoh.(unitArea).(populationArea))+1;
           if sum(populationRate)
             %if exist('dependenciesAdded', 'var') && dependenciesAdded
-              [spikingSpikingCoh.(unitArea).(populationArea){recInd}.fullCoherence, ...
-                spikingSpikingCoh.(unitArea).(populationArea){recInd}.half1Coherence, ...
-                spikingSpikingCoh.(unitArea).(populationArea){recInd}.half2Coherence, ...
+              [~, ~, ~, ...
                 spikingSpikingCoh.(unitArea).(populationArea){recInd}.fullInterpCoherence, ...
                 spikingSpikingCoh.(unitArea).(populationArea){recInd}.half1InterpCoherence, ...
                 spikingSpikingCoh.(unitArea).(populationArea){recInd}.half2InterpCoherence] = ...
@@ -135,9 +133,7 @@ for iUnitArea = resumeInd:nAreas
                 freqfactor, tapers, false, true, false, 0, true, true, true, ...
                 parallelise);
             %else
-            %  [spikingSpikingCoh.(unitArea).(populationArea){recInd}.fullCoherence, ...
-            %    spikingSpikingCoh.(unitArea).(populationArea){recInd}.half1Coherence, ...
-            %    spikingSpikingCoh.(unitArea).(populationArea){recInd}.half2Coherence, ...
+            %  [~, ~, ~, ...
             %    spikingSpikingCoh.(unitArea).(populationArea){recInd}.fullInterpCoherence, ...
             %    spikingSpikingCoh.(unitArea).(populationArea){recInd}.half1InterpCoherence, ...
             %    spikingSpikingCoh.(unitArea).(populationArea){recInd}.half2InterpCoherence] = ...
@@ -156,8 +152,28 @@ for iUnitArea = resumeInd:nAreas
             spikingSpikingCoh.(unitArea).(populationArea){recInd}.vertCoords = expData.vertCoords(unitsOI);
             spikingSpikingCoh.(unitArea).(populationArea){recInd}.unitBrainAreas = expData.unitBrainAreas(unitsOI);
             spikingSpikingCoh.(unitArea).(populationArea){recInd}.goodUnits = expData.goodUnits(unitsOI);
+            spikingSpikingCoh.(unitArea).(populationArea){recInd}.unitsPR = expData.units(unitInds);
+            spikingSpikingCoh.(unitArea).(populationArea){recInd}.populationBrainAreas = expData.unitBrainAreas(unitInds);
             spikingSpikingCoh.(unitArea).(populationArea){recInd}.recordingNumber = iRec;
             spikingSpikingCoh.(unitArea).(populationArea){recInd}.timeOfCompletion = datetime;
+
+            % Visualise data
+            %fH = figure;
+            %hold on
+            %for iUnit = 1:spikingSpikingCoh.(unitArea).(populationArea){recInd}.nUnits
+            %  plot(spikingSpikingCoh.(unitArea).(populationArea){recInd}.fullInterpCoherence.frequency(iUnit,:), ...
+            %    spikingSpikingCoh.(unitArea).(populationArea){recInd}.fullInterpCoherence.phase(iUnit,:))
+            %end
+            %plot(spikingSpikingCoh.(unitArea).(populationArea){recInd}.fullInterpCoherence.frequency(iUnit,:), ...
+            %  datamean(spikingSpikingCoh.(unitArea).(populationArea){recInd}.fullInterpCoherence.phase, ...
+            %  'circularNP'), 'LineWidth',2)
+            %hold off
+            %ax = gca;
+            %ax.XScale = 'log';
+            %ylim([-pi pi]);
+            %fTitle = strrep([unitArea ' wrt ' populationArea ': rec' num2str(recInd)], '_', '-');
+            %title(fTitle)
+            %try; close(fH); catch; end; %#ok<NOSEMI>
           end
         end
       end
