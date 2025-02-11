@@ -1,17 +1,18 @@
-% Script for producing phase profile figures. The script can only be
-% executed on Matlab version R2021a or higher due to the use of functions
-% with keyword-value argument pairs.
+% Script for producing phase profile figures for cross-area comparisons.
+% The script can only be executed on Matlab version R2021a or higher due to
+% the use of functions with keyword-value argument pairs.
 
 % Load parameters
 params
-population = 'all'; %'all', 'positive', 'negative'
-areas = {'VPL_VPM_LG_PO_LP', 'SSp', 'RSP', 'CA_DG'};
-%areas = {'DG', 'SSp', 'RSP', 'VPL_VPM_LG_PO_LP'};
+population = 'negative'; %'all', 'positive', 'negative'
+%areas = {'VPL_VPM_LG_PO_LP', 'SSp', 'RSP', 'CA_DG'};
+areas = {'VPL_VPM_LG_PO_LP', 'SSp', 'CA_DG'};
+direction = 'forward'; %'forward', 'backward'
 
 % Load data analysis results
 if ~exist('infraslowAnalyses', 'var')
   analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
-  load(analysisResultsFile);
+  load(analysisResultsFile); 
 end
 
 % Go through area comparisons and produce figures
@@ -21,12 +22,19 @@ nComp = numel(areas)-1;
 for iComp = 1:nComp
 
   % Get the data
+  if strcmpi(direction, 'forward')
+    areaSignal = areas{1};
+    areaReference = areas{iComp+1};
+  elseif strcmpi(direction, 'backward')
+    areaSignal = areas{iComp+1};
+    areaReference = areas{1};
+  end
   if strcmpi(population, 'all')
-    compData = infraslowAnalyses.spikingSpikingCoh.(areas{iComp+1}).(areas{1});
+    compData = infraslowAnalyses.spikingSpikingCoh.(areaSignal).(areaReference);
   elseif strcmpi(population, 'positive')
-    compData = infraslowAnalyses.spikingSpikingCoh.(areas{iComp+1}).(areas{1});
+    compData = infraslowAnalyses.spikingSpikingCohPositive.(areaSignal).(areaReference);
   elseif strcmpi(population, 'negative')
-    compData = infraslowAnalyses.spikingSpikingCoh.(areas{iComp+1}).(areas{1});
+    compData = infraslowAnalyses.spikingSpikingCohNegative.(areaSignal).(areaReference);
   end
 
   % Combine recording phases
@@ -60,6 +68,6 @@ for iComp = 1:nComp
   if iComp == nComp
     hold off
   end
-  disp(phaseProfile);
+  %disp(phaseProfile);
 end
 ylim([-pi pi]);
