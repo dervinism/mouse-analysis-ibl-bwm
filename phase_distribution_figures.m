@@ -6,8 +6,9 @@
 % Load parameters
 params
 FOI = fliplr(FOI);
-selectAreaHistos = true;
+selectAreaHistos = false;
 allAreaHistos = false;
+oldAreaHistos = true;
 
 % Load data analysis results
 analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
@@ -52,19 +53,8 @@ end
 
 if selectAreaHistos
   % Bin phase values to histograms for areas of interest
-  binCounts = cell(size(areaOIPhase)); %#ok<*UNRCH>
-  binLocs = cell(size(areaOIPhase));
-  totalCounts = cell(size(areaOIPhase));
-  phaseMeans = cell(size(areaOIPhase));
-  phaseSDs = cell(size(areaOIPhase));
-  significantFractions = cell(size(areaOIPhase));
-  for iArea = 1:nAreas
-    if ~isempty(areaOIPhase{iArea})
-      [binCounts{iArea}, binLocs{iArea}, totalCounts{iArea}, ...
-        significantFractions{iArea}, phaseMeans{iArea}, phaseSDs{iArea}] = ...
-        phaseHistrogram(areaOIPhase{iArea}, centre=0, nBins=10);
-    end
-  end
+  [binCounts, binLocs, totalCounts, significantFractions, ...
+    phaseMeans, phaseSDs] = phaseHistrogramWrap(areaOIPhase)
 
   % Plot phase histograms for areas of interest
   if ~exist(figFolder, 'dir')
@@ -91,19 +81,8 @@ end
 if allAreaHistos
   % Bin phase values to histograms for all areas
   nAreas = size(areaLabels,1);
-  binCounts = cell(size(areaPhase));
-  binLocs = cell(size(areaPhase));
-  totalCounts = cell(size(areaPhase));
-  phaseMeans = cell(size(areaPhase));
-  phaseSDs = cell(size(areaPhase));
-  significantFractions = cell(size(areaPhase));
-  for iArea = 1:nAreas
-    if ~isempty(areaPhase{iArea})
-      [binCounts{iArea}, binLocs{iArea}, totalCounts{iArea}, ...
-        significantFractions{iArea}, phaseMeans{iArea}, phaseSDs{iArea}] = ...
-        phaseHistrogram(areaPhase{iArea}, centre=0, nBins=10);
-    end
-  end
+  [binCounts, binLocs, totalCounts, significantFractions, ...
+    phaseMeans, phaseSDs] = phaseHistrogramWrap(areaPhase)
 
   % Plot phase histograms for all areas
   if ~exist(figFolder, 'dir')
@@ -125,4 +104,57 @@ if allAreaHistos
       end
     end
   end
+end
+
+if oldAreaHistos
+  %[binCounts, binLocs, totalCounts, significantFractions, ...
+  %  phaseMeans, phaseSDs] = phaseHistrogramWrap(areaOIPhase);
+
+  options = struct();
+  options.mainFolder = figFolder;
+  options.histosSubfolder = 'phaseHistos';
+  options.mapsSubfolder = 'phaseMaps';
+  options.figSize = 15;
+  options.figTitle = 'PUPIL';
+  options.freqLim = [10e-3 2];
+  phaseShift = pi/2;
+  options.phaseLimHisto = phaseLim + phaseShift;
+  options.phaseLimMap = phaseLim - phaseShift;
+  options.xLabelHist = '# units';
+  options.limExpansion = pi/2;
+  options.mask = {[options.freqLim(1) options.phaseLimMap(end)+options.limExpansion; 2 options.phaseLimMap(end)+options.limExpansion;...
+    options.freqLim(1) pi/2; 2 options.phaseLimMap(end)+options.limExpansion];...
+    [0.05 options.phaseLimMap(1)-options.limExpansion; options.freqLim(end) -pi/2;...
+    0.05 options.phaseLimMap(1)-options.limExpansion; options.freqLim(end) options.phaseLimMap(1)-options.limExpansion]};
+  options.iAreasOI = 1:numel(areasOI);
+  [phaseHistos, distributionStats] = phaseHistosPlotMaster([false false true], ...
+    areasOI, {'awake'}, FOI, {areaOIPhase}, edges+phaseShift, options);
+end
+
+
+
+%% Local functions
+function [binCounts, binLocs, totalCounts, significantFractions, ...
+  phaseMeans, phaseSDs] = phaseHistrogramWrap(areaPhases) %#ok<*DEFNU>
+% [binCounts, binLocs, totalCounts, significantFractions, ...
+%   phaseMeans, phaseSDs] = phaseHistrogramWrap(areaPhases)
+%
+% Function calculates phase histogram profiles. It's a helper function
+% within phase_distribution_figures.m script.
+
+% Bin phase values to histograms for areas of interest
+nAreas = numel(areaPhases);
+binCounts = cell(size(areaPhases)); %#ok<*UNRCH>
+binLocs = cell(size(areaPhases));
+totalCounts = cell(size(areaPhases));
+phaseMeans = cell(size(areaPhases));
+phaseSDs = cell(size(areaPhases));
+significantFractions = cell(size(areaPhases));
+for iArea = 1:nAreas
+  if ~isempty(areaPhases{iArea})
+    [binCounts{iArea}, binLocs{iArea}, totalCounts{iArea}, ...
+      significantFractions{iArea}, phaseMeans{iArea}, phaseSDs{iArea}] = ...
+      phaseHistrogram(areaPhases{iArea}, centre=0, nBins=10);
+  end
+end
 end

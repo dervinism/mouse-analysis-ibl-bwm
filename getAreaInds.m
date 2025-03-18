@@ -6,8 +6,13 @@ function areaInds = getAreaInds(areaOI, areaTable)
 %
 % Arguments:
 %   areaOI (char, required, positional): a shape-(1, N) character array
-%     containing the area name of interest. Areas of interest are defined
-%     in the parameters.m script within the areasOI variable.
+%     containing the area name of interest. Available choices include:
+%     'sensory-Th', 'association-Th', 'motor-Th', 'sensory-nCx',
+%     'association-nCx', 'motor-nCx', 'association-paCx', 'sensory-pCx',
+%     'association-pCx', 'Cx', 'VPL-VPM', 'LG', 'VPL-VPM-PO',
+%     'VPL-VPM-PO-LP', 'VPL-VPM-LG', 'VPL-VPM-LG-PO', 'VPL-VPM-LG-PO-LP',
+%     'SSp-body', 'SSp', 'RSPd-RSPv', 'RSP', 'CA', 'CA-DG', and any other
+%     area listed in column 2 of areaLabels variable in params.m file.
 %   areaTable (table, required, positional): a shape-(M, 6) table
 %     corresponding to the variable
 %     infraslowAnalyses.areaSummaries.areaTable.
@@ -54,6 +59,10 @@ elseif strcmpi(areaOI, 'sensory-pCx')
     ismember(areaTable.Brain_area_group, 'pCx');
 elseif strcmpi(areaOI, 'association-pCx')
   areaInds = ismember(areaTable.Brain_area_type, 'association') & ...
+    ismember(areaTable.Brain_area_group, 'pCx');
+elseif strcmpi(areaOI, 'Cx')
+  areaInds = ismember(areaTable.Brain_area_group, 'nCx') | ...
+    ismember(areaTable.Brain_area_group, 'paCx') | ...
     ismember(areaTable.Brain_area_group, 'pCx');
 elseif strcmpi(areaOI, 'VPL-VPM')
   areaInds = ismember(areaTable.Brain_area_acronym, 'VPL') | ...

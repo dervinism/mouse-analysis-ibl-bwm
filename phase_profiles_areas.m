@@ -4,9 +4,10 @@
 
 % Load parameters
 params
-population = 'negative'; %'all', 'positive', 'negative'
+population = 'positive'; %'all', 'positive', 'negative'
 %areas = {'VPL_VPM_LG_PO_LP', 'SSp', 'RSP', 'CA_DG'};
 areas = {'VPL_VPM_LG_PO_LP', 'SSp', 'CA_DG'};
+%areas = {'Th', 'nCx', 'RSP', 'CA_DG'};
 direction = 'forward'; %'forward', 'backward'
 
 % Load data analysis results

@@ -7,8 +7,11 @@
 addDependencies
 params
 parallelCores = 32;
-excludeMovement = false;
+halfCoherence = false;
 population = 'all'; %'all', 'positive', 'negative'
+excludeMovement = false;
+significantOnly = true;
+alpha = 0.05;
 resumeInd = 1;
 
 % Load preprocessed data
@@ -58,17 +61,21 @@ for iUnitArea = resumeInd:nAreas
     expData = infraslowData.experimentData{iRec};
     if isfield(expData, 'unitBrainAreas')
       unitsOI = ismember(expData.unitBrainAreas, subAreasOI);
+      expPupilCorrDataP = infraslowAnalyses.spikingPupilCorr.recordings.pvalSpearman{iRec};
       if strcmpi(population, 'positive') || strcmpi(population, 'negative')
-        expPupilCorrData = infraslowAnalyses.spikingPupilCorr.recordings.rPearson{iRec};
-        if ~isempty(expPupilCorrData) && any(~isnan(expPupilCorrData))
+        expPupilCorrDataR = infraslowAnalyses.spikingPupilCorr.recordings.rSpearman{iRec};
+        if ~isempty(expPupilCorrDataR) && any(~isnan(expPupilCorrDataR))
           if strcmpi(population, 'positive')
-            unitsOI = unitsOI & expPupilCorrData > 0;
+            unitsOI = unitsOI & expPupilCorrDataR > 0;
           elseif strcmpi(population, 'negative')
-            unitsOI = unitsOI & expPupilCorrData < 0;
+            unitsOI = unitsOI & expPupilCorrDataR < 0;
           end
         else
           continue
         end
+      end
+      if significantOnly
+        unitsOI = unitsOI & expPupilCorrDataP < alpha;
       end
       if any(unitsOI)
 
@@ -103,9 +110,12 @@ for iUnitArea = resumeInd:nAreas
           % Get the population rate
           unitInds = ismember(expData.unitBrainAreas, subAreasOI_population);
           if strcmpi(population, 'positive')
-            unitInds = unitInds & expPupilCorrData > 0;
+            unitInds = unitInds & expPupilCorrDataR > 0;
           elseif strcmpi(population, 'negative')
-            unitInds = unitInds & expPupilCorrData < 0;
+            unitInds = unitInds & expPupilCorrDataR < 0;
+          end
+          if significantOnly
+            unitInds = unitInds & expPupilCorrDataP < alpha;
           end
           if ~any(unitInds)
             continue
@@ -121,26 +131,22 @@ for iUnitArea = resumeInd:nAreas
             spikingSpikingCoh.(unitArea).(populationArea) = {};
           end
           recInd = numel(spikingSpikingCoh.(unitArea).(populationArea))+1;
-          if sum(populationRate)
+          if sum(populationRate) > 1
             %if exist('dependenciesAdded', 'var') && dependenciesAdded
               [~, ~, ~, ...
-                spikingSpikingCoh.(unitArea).(populationArea){recInd}.fullInterpCoherence, ...
-                spikingSpikingCoh.(unitArea).(populationArea){recInd}.half1InterpCoherence, ...
-                spikingSpikingCoh.(unitArea).(populationArea){recInd}.half2InterpCoherence] = ...
+                spikingSpikingCoh.(unitArea).(populationArea){recInd}.fullInterpCoherence] = ...
                 coherence(unitSpikeCountsCell, populationRate, [], ...
                 1/effectiveSR, 1/effectiveSR, [0 0], FOI, ...
                 'pbc', 'pbc', winfactor, ...
-                freqfactor, tapers, false, true, false, 0, true, true, true, ...
-                parallelise);
+                freqfactor, tapers, false, true, false, 0, true, true, ...
+                halfCoherence, parallelise);
             %else
             %  [~, ~, ~, ...
-            %    spikingSpikingCoh.(unitArea).(populationArea){recInd}.fullInterpCoherence, ...
-            %    spikingSpikingCoh.(unitArea).(populationArea){recInd}.half1InterpCoherence, ...
-            %    spikingSpikingCoh.(unitArea).(populationArea){recInd}.half2InterpCoherence] = ...
+            %    spikingSpikingCoh.(unitArea).(populationArea){recInd}.fullInterpCoherence] = ...
             %    coherence(unitSpikeCountsCell, populationRate, ...
             %    stepsize=1/effectiveSR, startTime=1/effectiveSR, freqGrid=FOI, ...
             %    typespk1='pbc', typespk2='pbc', winfactor=winfactor, ...
-            %    freqfactor=freqfactor, tapers=tapers, halfCoherence=true, ...
+            %    freqfactor=freqfactor, tapers=tapers, halfCoherence=halfCoherence, ...
             %    parallelise=parallelise);
             %end
 
@@ -181,23 +187,45 @@ for iUnitArea = resumeInd:nAreas
   end
 
   % Save data analysis results
-  if strcmpi(population, 'all')
-    if excludeMovement
-      infraslowAnalyses.spikingSpikingCoh_noMovement.(unitArea) = spikingSpikingCoh.(unitArea);
-    else
-      infraslowAnalyses.spikingSpikingCoh.(unitArea) = spikingSpikingCoh.(unitArea);
+  if significantOnly
+    if strcmpi(population, 'all')
+      if excludeMovement
+        infraslowAnalyses.spikingSpikingCohSignificant_noMovement.(unitArea) = spikingSpikingCoh.(unitArea);
+      else
+        infraslowAnalyses.spikingSpikingCohSignificant.(unitArea) = spikingSpikingCoh.(unitArea);
+      end
+    elseif strcmpi(population, 'positive')
+      if excludeMovement
+        infraslowAnalyses.spikingSpikingCohPositiveSignificant_noMovement.(unitArea) = spikingSpikingCoh.(unitArea);
+      else
+        infraslowAnalyses.spikingSpikingCohPositiveSignificant.(unitArea) = spikingSpikingCoh.(unitArea);
+      end
+    elseif strcmpi(population, 'negative')
+      if excludeMovement
+        infraslowAnalyses.spikingSpikingCohNegativeSignificant_noMovement.(unitArea) = spikingSpikingCoh.(unitArea);
+      else
+        infraslowAnalyses.spikingSpikingCohNegativeSignificant.(unitArea) = spikingSpikingCoh.(unitArea);
+      end
     end
-  elseif strcmpi(population, 'positive')
-    if excludeMovement
-      infraslowAnalyses.spikingSpikingCohPositive_noMovement.(unitArea) = spikingSpikingCoh.(unitArea);
-    else
-      infraslowAnalyses.spikingSpikingCohPositive.(unitArea) = spikingSpikingCoh.(unitArea);
-    end
-  elseif strcmpi(population, 'negative')
-    if excludeMovement
-      infraslowAnalyses.spikingSpikingCohNegative_noMovement.(unitArea) = spikingSpikingCoh.(unitArea);
-    else
-      infraslowAnalyses.spikingSpikingCohNegative.(unitArea) = spikingSpikingCoh.(unitArea);
+  else
+    if strcmpi(population, 'all')
+      if excludeMovement
+        infraslowAnalyses.spikingSpikingCoh_noMovement.(unitArea) = spikingSpikingCoh.(unitArea);
+      else
+        infraslowAnalyses.spikingSpikingCoh.(unitArea) = spikingSpikingCoh.(unitArea);
+      end
+    elseif strcmpi(population, 'positive')
+      if excludeMovement
+        infraslowAnalyses.spikingSpikingCohPositive_noMovement.(unitArea) = spikingSpikingCoh.(unitArea);
+      else
+        infraslowAnalyses.spikingSpikingCohPositive.(unitArea) = spikingSpikingCoh.(unitArea);
+      end
+    elseif strcmpi(population, 'negative')
+      if excludeMovement
+        infraslowAnalyses.spikingSpikingCohNegative_noMovement.(unitArea) = spikingSpikingCoh.(unitArea);
+      else
+        infraslowAnalyses.spikingSpikingCohNegative.(unitArea) = spikingSpikingCoh.(unitArea);
+      end
     end
   end
   save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');

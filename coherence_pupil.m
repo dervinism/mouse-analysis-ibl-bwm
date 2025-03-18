@@ -6,11 +6,14 @@
 % Load parameters
 addDependencies
 params
-parallelCores = 1; %32;
+parallelCores = 32;
 pupilPassbandFrequency = 1.5;
 pupilStopbandFrequency = 2;
+halfCoherence = false;
 population = 'all'; %'all', 'positive', 'negative'
 excludeMovement = false;
+significantOnly = false;
+alpha = 0.05;
 resumeInd = 1;
 
 % Load preprocessed data
@@ -56,17 +59,21 @@ for iArea = resumeInd:nAreas
 
       % Get all unit spike counts
       unitInds = ismember(expData.unitBrainAreas, areaAcronymInit);
+      expPupilCorrDataP = infraslowAnalyses.spikingPupilCorr.recordings.pvalSpearman{recID};
       if strcmpi(population, 'positive') || strcmpi(population, 'negative')
-        expPupilCorrData = infraslowAnalyses.spikingPupilCorr.recordings.rPearson{recID};
-        if ~isempty(expPupilCorrData) && any(~isnan(expPupilCorrData))
+        expPupilCorrDataR = infraslowAnalyses.spikingPupilCorr.recordings.rSpearman{recID};
+        if ~isempty(expPupilCorrDataR) && any(~isnan(expPupilCorrDataR))
           if strcmpi(population, 'positive')
-            unitInds = unitInds & expPupilCorrData > 0;
+            unitInds = unitInds & expPupilCorrDataR > 0;
           elseif strcmpi(population, 'negative')
-            unitInds = unitInds & expPupilCorrData < 0;
+            unitInds = unitInds & expPupilCorrDataR < 0;
           end
         else
           continue
         end
+      end
+      if significantOnly
+        unitInds = unitInds & expPupilCorrDataP < alpha;
       end
       if any(unitInds)
         spikeCounts = expData.spikeCounts(unitInds,:);
@@ -78,7 +85,7 @@ for iArea = resumeInd:nAreas
           spikeCounts = spikeCounts(:,noMovementInds);
         end
 
-        % Get the pupil are size
+        % Get the pupil area size
         if ~isempty(expData.leftPupilAreaSize) && ~isempty(expData.rightPupilAreaSize)
           pupilAreaSize = mean([expData.leftPupilAreaSize; expData.rightPupilAreaSize]);
         elseif ~isempty(expData.leftPupilAreaSize)
@@ -126,28 +133,20 @@ for iArea = resumeInd:nAreas
 
         % Coherence analysis
         %if exist('dependenciesAdded', 'var') && dependenciesAdded
-        [spikingPupilCoh.(areaAcronym){iRec}.fullCoherence, ...
-          spikingPupilCoh.(areaAcronym){iRec}.half1Coherence, ...
-          spikingPupilCoh.(areaAcronym){iRec}.half2Coherence, ...
-          spikingPupilCoh.(areaAcronym){iRec}.fullInterpCoherence, ...
-          spikingPupilCoh.(areaAcronym){iRec}.half1InterpCoherence, ...
-          spikingPupilCoh.(areaAcronym){iRec}.half2InterpCoherence] = ...
-          coherence(spikeCountsCell, pupilAreaSizeFilt, [], ...
-          1/effectiveSR, 1/effectiveSR, [0 0], FOI, ...
-          'pbc', 'c', winfactor, ...
-          freqfactor, tapers, false, true, false, 0, true, true, true, ...
-          parallelise);
+          [~, ~, ~, ...
+            spikingPupilCoh.(areaAcronym){iRec}.fullInterpCoherence] = ...
+            coherence(spikeCountsCell, pupilAreaSizeFilt, [], ...
+            1/effectiveSR, 1/effectiveSR, [0 0], FOI, ...
+            'pbc', 'c', winfactor, ...
+            freqfactor, tapers, false, true, false, 0, true, true, ...
+            halfCoherence, parallelise);
         %else
-        %  [spikingPupilCoh.(areaAcronym){iRec}.fullCoherence, ...
-        %    spikingPupilCoh.(areaAcronym){iRec}.half1Coherence, ...
-        %    spikingPupilCoh.(areaAcronym){iRec}.half2Coherence, ...
-        %    spikingPupilCoh.(areaAcronym){iRec}.fullInterpCoherence, ...
-        %    spikingPupilCoh.(areaAcronym){iRec}.half1InterpCoherence, ...
-        %    spikingPupilCoh.(areaAcronym){iRec}.half2InterpCoherence] = ...
+        %  [~, ~, ~, ...
+        %    spikingPupilCoh.(areaAcronym){iRec}.fullInterpCoherence] = ...
         %    coherence(spikeCountsCell, pupilAreaSizeFilt, ...
         %    stepsize=1/effectiveSR, startTime=1/effectiveSR, freqGrid=FOI, ...
         %    typespk1='pbc', typespk2='c', winfactor=winfactor, ...
-        %    freqfactor=freqfactor, tapers=tapers, halfCoherence=true, ...
+        %    freqfactor=freqfactor, tapers=tapers, halfCoherence=halfCoherence, ...
         %    parallelise=parallelise);
         %end
         spikingPupilCoh.(areaAcronym){iRec}.experimentIndex = recID;
@@ -159,23 +158,45 @@ for iArea = resumeInd:nAreas
     if ~isfield(spikingPupilCoh, areaAcronym)
       spikingPupilCoh.(areaAcronym) = {};
     end
-    if strcmpi(population, 'all')
-      if excludeMovement
-        infraslowAnalyses.spikingPupilCoh_noMovement.(areaAcronym) = spikingPupilCoh.(areaAcronym);
-      else
-        infraslowAnalyses.spikingPupilCoh.(areaAcronym) = spikingPupilCoh.(areaAcronym); %#ok<*UNRCH>
+    if significantOnly
+      if strcmpi(population, 'all')
+        if excludeMovement
+          infraslowAnalyses.spikingPupilCohSignificant_noMovement.(areaAcronym) = spikingPupilCoh.(areaAcronym);
+        else
+          infraslowAnalyses.spikingPupilCohSignificant.(areaAcronym) = spikingPupilCoh.(areaAcronym); %#ok<*UNRCH>
+        end
+      elseif strcmpi(population, 'positive')
+        if excludeMovement
+          infraslowAnalyses.spikingPupilCohPositiveSignificant_noMovement.(areaAcronym) = spikingPupilCoh.(areaAcronym);
+        else
+          infraslowAnalyses.spikingPupilCohPositiveSignificant.(areaAcronym) = spikingPupilCoh.(areaAcronym);
+        end
+      elseif strcmpi(population, 'negative')
+        if excludeMovement
+          infraslowAnalyses.spikingPupilCohNegativeSignificant_noMovement.(areaAcronym) = spikingPupilCoh.(areaAcronym);
+        else
+          infraslowAnalyses.spikingPupilCohNegativeSignificant.(areaAcronym) = spikingPupilCoh.(areaAcronym);
+        end
       end
-    elseif strcmpi(population, 'positive')
-      if excludeMovement
-        infraslowAnalyses.spikingPupilCohPositive_noMovement.(areaAcronym) = spikingPupilCoh.(areaAcronym);
-      else
-        infraslowAnalyses.spikingPupilCohPositive.(areaAcronym) = spikingPupilCoh.(areaAcronym); %#ok<*UNRCH>
-      end
-    elseif strcmpi(population, 'negative')
-      if excludeMovement
-        infraslowAnalyses.spikingPupilCohNegative_noMovement.(areaAcronym) = spikingPupilCoh.(areaAcronym);
-      else
-        infraslowAnalyses.spikingPupilCohNegative.(areaAcronym) = spikingPupilCoh.(areaAcronym); %#ok<*UNRCH>
+    else
+      if strcmpi(population, 'all')
+        if excludeMovement
+          infraslowAnalyses.spikingPupilCoh_noMovement.(areaAcronym) = spikingPupilCoh.(areaAcronym);
+        else
+          infraslowAnalyses.spikingPupilCoh.(areaAcronym) = spikingPupilCoh.(areaAcronym);
+        end
+      elseif strcmpi(population, 'positive')
+        if excludeMovement
+          infraslowAnalyses.spikingPupilCohPositive_noMovement.(areaAcronym) = spikingPupilCoh.(areaAcronym);
+        else
+          infraslowAnalyses.spikingPupilCohPositive.(areaAcronym) = spikingPupilCoh.(areaAcronym);
+        end
+      elseif strcmpi(population, 'negative')
+        if excludeMovement
+          infraslowAnalyses.spikingPupilCohNegative_noMovement.(areaAcronym) = spikingPupilCoh.(areaAcronym);
+        else
+          infraslowAnalyses.spikingPupilCohNegative.(areaAcronym) = spikingPupilCoh.(areaAcronym);
+        end
       end
     end
     save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');

@@ -4,8 +4,15 @@
 
 % Load parameters
 params
-population = 'all'; %'all', 'positive', 'negative'
-areas = {'VPL_VPM_LG_PO_LP', 'SSp', 'RSP', 'CA_DG'};
+population = 'negative'; %'all', 'positive', 'negative'
+significantOnly = false;
+%areas = {'VPL_VPM_LG_PO_LP', 'SSp', 'RSP', 'CA_DG'};
+%areas = {'sensory_Th', 'sensory_nCx', 'paCx', 'CA_DG'};
+%areas = {'sensory_Th', 'motor_Th', 'association_Th'};
+%areas = {'sensory_nCx', 'motor_nCx', 'association_nCx'};
+%areas = {'Th', 'nCx', 'RSPd', 'CA_DG'};
+areas = {'Th', 'Cx', 'CA_DG'};
+%areas = {'sensory_Th', 'association_Th', 'sensory_nCx', 'association_nCx', 'CA_DG'};
 
 % Load data analysis results
 if ~exist('infraslowAnalyses', 'var')
@@ -24,14 +31,29 @@ for iComp = 1:nComp
   compData = {};
   for iArea = 1:numel(areaInds)
     if strcmpi(population, 'all')
-      structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCoh);
-      compData = [compData, infraslowAnalyses.spikingPupilCoh.(structFieldNames{areaInds(iArea)})];
+      if significantOnly
+        structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCohSignificant); %#ok<*UNRCH>
+        compData = [compData, infraslowAnalyses.spikingPupilCohSignificant.(structFieldNames{areaInds(iArea)})];
+      else
+        structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCoh);
+        compData = [compData, infraslowAnalyses.spikingPupilCoh.(structFieldNames{areaInds(iArea)})];
+      end
     elseif strcmpi(population, 'positive')
-      structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCohPositive);
-      compData = [compData, infraslowAnalyses.spikingPupilCohPositive.(structFieldNames{areaInds(iArea)})];
+      if significantOnly
+        structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCohPositiveSignificant);
+        compData = [compData, infraslowAnalyses.spikingPupilCohPositiveSignificant.(structFieldNames{areaInds(iArea)})];
+      else
+        structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCohPositive);
+        compData = [compData, infraslowAnalyses.spikingPupilCohPositive.(structFieldNames{areaInds(iArea)})];
+      end
     elseif strcmpi(population, 'negative')
-      structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCohNegative);
-      compData = [compData, infraslowAnalyses.spikingPupilCohNegative.(structFieldNames{areaInds(iArea)})];
+      if significantOnly
+        structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCohNegativeSignificant);
+        compData = [compData, infraslowAnalyses.spikingPupilCohNegativeSignificant.(structFieldNames{areaInds(iArea)})];
+      else
+        structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCohNegative);
+        compData = [compData, infraslowAnalyses.spikingPupilCohNegative.(structFieldNames{areaInds(iArea)})];
+      end
     end
   end
 
@@ -52,12 +74,15 @@ for iComp = 1:nComp
   if iComp == 1
     fH = figure;
     colour = 'g';
+    p = zeros(nComp, 1);
   elseif iComp == 2
     colour = 'r';
   elseif iComp == 3
     colour = 'b';
   elseif iComp == 4
     colour = 'c';
+  elseif iComp == 5
+    colour = 'm';
   end
   ciplot(phaseProfile+phaseProfileCI(1,:), ...
     phaseProfile+phaseProfileCI(2,:), freq, colour, 0.1);
@@ -66,10 +91,10 @@ for iComp = 1:nComp
   if iComp == 1
     hold on
   end
-  semilogx(freq, phaseProfile, colour, 'LineWidth',1.5);
+  p(iComp) = semilogx(freq, phaseProfile, colour, 'LineWidth',1.5);
   if iComp == nComp
     hold off
+    legend(p, areas);
   end
-  %disp(phaseProfile);
 end
 ylim([-pi pi]);
