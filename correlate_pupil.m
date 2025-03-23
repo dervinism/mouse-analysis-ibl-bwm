@@ -1,313 +1,313 @@
-% % Use this script to correlate unit spiking with pupil area size.
-% % The script can only be executed on Matlab version R2021a or higher due to
-% % the use of functions with keyword-value argument pairs.
-% 
-% % Load parameters
-% params
-% pupilPassbandFrequency = 1.5;
-% pupilStopbandFrequency = 2;
-% averagedPupilDownsampling = true;
-% alpha = 0.05; % Significance level
-% excludeMovement = false;
-% violinOrLines = 'lines'; % 'violin' or 'lines'
+% Use this script to correlate unit spiking with pupil area size.
+% The script can only be executed on Matlab version R2021a or higher due to
+% the use of functions with keyword-value argument pairs.
+
+% Load parameters
+params
+pupilPassbandFrequency = 1.5;
+pupilStopbandFrequency = 2;
+averagedPupilDownsampling = true;
+alpha = 0.05; % Significance level
+excludeMovement = false;
+violinOrLines = 'lines'; % 'violin' or 'lines'
 includeAllAreas = false;
-% 
-% % Load preprocessed data
-% if ~exist('infraslowData', 'var')
-%   preprocessedDataFile = fullfile(processedDataFolder, 'bwmPreprocessedData2.mat');
-%   load(preprocessedDataFile);
-% end
-% 
-% % Load data analysis results
-% if ~exist('infraslowAnalyses', 'var')
-%   analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
-%   load(analysisResultsFile);
-% end
-% 
-% % Correlate individual unit activity with the pupil area: organise by recording
-% nRecs = numel(infraslowData.experimentData);
-% rPearson = cell(nRecs,1);
-% pvalPearson = cell(nRecs,1);
-% rSpearman = cell(nRecs,1);
-% pvalSpearman = cell(nRecs,1);
-% for iRec = 1:nRecs
-%   disp(['Progress: ' num2str(100*iRec/nRecs) '%']);
-%   expData = infraslowData.experimentData{iRec};
-%   if isfield(expData, 'spikeCounts')
-%     nUnits = expData.nUnits;
-%     rPearson{iRec} = NaN(nUnits,1);
-%     pvalPearson{iRec} = NaN(nUnits,1);
-%     rSpearman{iRec} = NaN(nUnits,1);
-%     pvalSpearman{iRec} = NaN(nUnits,1);
-% 
-%     if ~isempty(expData.leftPupilAreaSize) || ~isempty(expData.rightPupilAreaSize)
-%       unitSpikeCounts = full(expData.spikeCounts);
-%       spikeTimeBins = expData.spikeTimeBins;
-%       if excludeMovement
-%         [spikeTimeBins, noMovementInds] = selectArrayValues( ...
-%           spikeTimeBins, expData.noMovementIntervals);
-%         unitSpikeCounts = unitSpikeCounts(noMovementInds);
-%       end
-%       [unitSpikeCounts, downsampledTimes] = resampleSpikeCounts( ...
-%         unitSpikeCounts, stepsize=1/expData.samplingRate, ...
-%         newStepsize=1/downsampledRate); % Downsample spiking data
-% 
-%       % Get the pupil area size
-%       if ~isempty(expData.leftPupilAreaSize) && ~isempty(expData.rightPupilAreaSize)
-%         pupilAreaSize = mean([expData.leftPupilAreaSize; expData.rightPupilAreaSize]);
-%       elseif ~isempty(expData.leftPupilAreaSize)
-%         pupilAreaSize = expData.leftPupilAreaSize;
-%       elseif ~isempty(expData.rightPupilAreaSize)
-%         pupilAreaSize = expData.rightPupilAreaSize;
-%       else
-%         continue
-%       end
-% 
-%       % Filter the pupil area size
-%       pupilAreaSizeFilt = pupilAreaSize;
-%       valueExists = ~isnan(pupilAreaSize);
-%       sr = 1/mean(diff(expData.spikeTimeBins));
-%       d = designfilt('lowpassiir', ...
-%         'PassbandFrequency',pupilPassbandFrequency, ...
-%         'StopbandFrequency',pupilStopbandFrequency, ...
-%         'PassbandRipple',0.5, 'StopbandAttenuation',1, ...
-%         'DesignMethod','butter', 'SampleRate',sr);
-%       pupilAreaSizeFilt(valueExists) = filtfilt(d,pupilAreaSize(valueExists));
-% 
-%       % Exclude movement periods
-%       if excludeMovement
-%         pupilAreaSizeFilt = pupilAreaSizeFilt(noMovementInds);
-%       end
-% 
-%       if averagedPupilDownsampling
-%         % Average the pupil area size (most accurate downsampling)
-%         averagedPupilAreaSize = movmean(pupilAreaSizeFilt, ...
-%           round(expData.samplingRate/downsampledRate), 'omitnan');
-%         downsampledPupilAreaSize = interp1(spikeTimeBins, averagedPupilAreaSize, ...
-%           downsampledTimes, 'linear', 'extrap');
-%       else
-%         % Downsample the pupil area size
-%         downsampledPupilAreaSize = interp1(spikeTimeBins, pupilAreaSizeFilt, ...
-%           downsampledTimes, 'linear', 'extrap'); %#ok<*UNRCH>
-%       end
-% 
-%       %fH = figure; plot(spikeTimeBins, pupilAreaSize, 'LineWidth',0.5); hold on
-%       %plot(spikeTimeBins, pupilAreaSizeFilt, 'LineWidth',0.5);
-%       %plot(downsampledTimes, downsampledPupilAreaSize, 'LineWidth',1.5);
-%       %plot(downsampledTimes, averagedPupilAreaSize, 'LineWidth',1.5); hold off
-%       %legend('smoothed','filtered','downsampled','averaged');
-%       %close(fH);
-% 
-%       if sum(isnan(downsampledPupilAreaSize)) == numel(downsampledPupilAreaSize) ...
-%           || ~any(downsampledPupilAreaSize)
-%         continue
-%       end
-% 
-%       % Correlate the two signals
-%       [rPearson{iRec}, pvalPearson{iRec}] = ...
-%         corrMulti(downsampledPupilAreaSize, unitSpikeCounts, 'Pearson');
-%       rPearson{iRec} = rPearson{iRec}'; pvalPearson{iRec} = pvalPearson{iRec}';
-%       [rSpearman{iRec}, pvalSpearman{iRec}] = ...
-%         corrMulti(downsampledPupilAreaSize, unitSpikeCounts, 'Spearman');
-%       rSpearman{iRec} = rSpearman{iRec}'; pvalSpearman{iRec} = pvalSpearman{iRec}';
-%     end
-%   end
-% end
-% spikingPupilCorr.recordings.rPearson = rPearson;
-% spikingPupilCorr.recordings.pvalPearson = pvalPearson;
-% spikingPupilCorr.recordings.rSpearman = rSpearman;
-% spikingPupilCorr.recordings.pvalSpearman = pvalSpearman;
-% 
-% 
-% % Correlate individual unit activity with the pupil area: organise by area
-% nAreas = numel(infraslowAnalyses.areaSummaries.groupedUnitInds);
-% rPearson = cell(nAreas,1);
-% pvalPearson = cell(nAreas,1);
-% rSpearman = cell(nAreas,1);
-% pvalSpearman = cell(nAreas,1);
-% for iArea = 1:nAreas
-%   disp(['Progress: ' num2str(100*iArea/nAreas) '%']);
-%   areaGroup = infraslowAnalyses.areaSummaries.areaTable.Brain_area_group{iArea};
-%   if ~strcmpi(areaGroup, '???')
-%     nUnits = size(infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}, 1);
-%     rPearson{iArea} = NaN(nUnits,1);
-%     pvalPearson{iArea} = NaN(nUnits,1);
-%     rSpearman{iArea} = NaN(nUnits,1);
-%     pvalSpearman{iArea} = NaN(nUnits,1);
-%     prevExpInd = 0;
-%     for iUnit = 1:nUnits
-% 
-%       % Get the single unit spike count
-%       expInd = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}(iUnit,1);
-%       expData = infraslowData.experimentData{expInd};
-%       if ~isempty(expData.leftPupilAreaSize) || ~isempty(expData.rightPupilAreaSize)
-%         unitInd = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}(iUnit,2);
-%         unitSpikeCounts = full(expData.spikeCounts(unitInd,:));
-%         spikeTimeBins = expData.spikeTimeBins;
-%         if excludeMovement
-%           [spikeTimeBins, noMovementInds] = selectArrayValues( ...
-%             spikeTimeBins, expData.noMovementIntervals);
-%           unitSpikeCounts = unitSpikeCounts(noMovementInds);
-%         end
-%         [unitSpikeCounts, downsampledTimes] = resampleSpikeCounts( ...
-%           unitSpikeCounts, stepsize=1/expData.samplingRate, ...
-%           newStepsize=1/downsampledRate); % Downsample spiking data
-%         if size(unitSpikeCounts,2) == 1
-%           unitSpikeCounts = unitSpikeCounts';
-%         end
-% 
-%         % Get the pupil area size
-%         if expInd ~= prevExpInd
-%           if ~isempty(expData.leftPupilAreaSize) && ~isempty(expData.rightPupilAreaSize)
-%             pupilAreaSize = mean([expData.leftPupilAreaSize; expData.rightPupilAreaSize]);
-%           elseif ~isempty(expData.leftPupilAreaSize)
-%             pupilAreaSize = expData.leftPupilAreaSize;
-%           elseif ~isempty(expData.rightPupilAreaSize)
-%             pupilAreaSize = expData.rightPupilAreaSize;
-%           else
-%             break
-%           end
-% 
-%           % Filter the pupil area size
-%           pupilAreaSizeFilt = pupilAreaSize;
-%           valueExists = ~isnan(pupilAreaSize);
-%           sr = 1/mean(diff(expData.spikeTimeBins));
-%           d = designfilt('lowpassiir', ...
-%             'PassbandFrequency',pupilPassbandFrequency, ...
-%             'StopbandFrequency',pupilStopbandFrequency, ...
-%             'PassbandRipple',0.5, 'StopbandAttenuation',1, ...
-%             'DesignMethod','butter', 'SampleRate',sr);
-%           pupilAreaSizeFilt(valueExists) = filtfilt(d,pupilAreaSize(valueExists));
-% 
-%           % Exclude movement periods
-%           if excludeMovement
-%             pupilAreaSizeFilt = pupilAreaSizeFilt(noMovementInds);
-%           end
-% 
-%           if averagedPupilDownsampling
-%             % Average the pupil area size (most accurate downsampling)
-%             averagedPupilAreaSize = movmean(pupilAreaSizeFilt, ...
-%               round(expData.samplingRate/downsampledRate), 'omitnan');
-%             downsampledPupilAreaSize = interp1(spikeTimeBins, averagedPupilAreaSize, ...
-%               downsampledTimes, 'linear', 'extrap');
-%           else
-%             % Downsample the pupil area size
-%             downsampledPupilAreaSize = interp1(spikeTimeBins, pupilAreaSizeFilt, ...
-%               downsampledTimes, 'linear', 'extrap'); %#ok<*UNRCH>
-%           end
-% 
-%           %fH = figure; plot(spikeTimeBins, pupilAreaSize, 'LineWidth',0.5); hold on
-%           %plot(spikeTimeBins, pupilAreaSizeFilt, 'LineWidth',0.5);
-%           %plot(downsampledTimes, downsampledPupilAreaSize, 'LineWidth',1.5);
-%           %plot(downsampledTimes, averagedPupilAreaSize, 'LineWidth',1.5); hold off
-%           %legend('smoothed','filtered','downsampled','averaged');
-%           %close(fH);
-%         end
-%         if sum(isnan(downsampledPupilAreaSize)) == numel(downsampledPupilAreaSize) ...
-%             || ~any(downsampledPupilAreaSize)
-%           continue
-%         end
-% 
-%         % Correlate the two signals
-%         [rPearson{iArea}(iUnit), pvalPearson{iArea}(iUnit)] = ...
-%           corrMulti(downsampledPupilAreaSize, unitSpikeCounts, 'Pearson');
-%         [rSpearman{iArea}(iUnit), pvalSpearman{iArea}(iUnit)] = ...
-%           corrMulti(downsampledPupilAreaSize, unitSpikeCounts, 'Spearman');
-%       end
-% 
-%       prevExpInd = expInd;
-%     end
-%   end
-% end
-% 
-% % Work out correlated unit proportions in single areas
-% spikingPupilCorr.singleAreas = calcPupilCorrFractions( ...
-%   rPearson, pvalPearson, rSpearman, pvalSpearman, ...
-%   alpha, infraslowAnalyses.areaSummaries.groupedUnitInds);
-% 
-% % Group areas
-% areaGroups = unique(infraslowAnalyses.areaSummaries.areaTable.Brain_area_group);
-% nAreas = numel(areaGroups);
-% rPearsonGroups = cell(nAreas,1);
-% pvalPearsonGroups = cell(nAreas,1);
-% rSpearmanGroups = cell(nAreas,1);
-% pvalSpearmanGroups = cell(nAreas,1);
-% groupedUnitInds = cell(nAreas,1);
-% for iArea = 1:nAreas
-%   areaInds = ismember( ...
-%     infraslowAnalyses.areaSummaries.areaTable.Brain_area_group, areaGroups{iArea});
-%   rPearsonGroups{iArea} = concatenateCells(rPearson(areaInds));
-%   pvalPearsonGroups{iArea} = concatenateCells(pvalPearson(areaInds));
-%   rSpearmanGroups{iArea} = concatenateCells(rSpearman(areaInds));
-%   pvalSpearmanGroups{iArea} = concatenateCells(pvalSpearman(areaInds));
-%   groupedUnitInds{iArea} = concatenateCells( ...
-%     infraslowAnalyses.areaSummaries.groupedUnitInds(areaInds));
-% end
-% areas2keep = ~ismember(areaGroups, '???');
-% rPearsonGroups = rPearsonGroups(areas2keep);
-% pvalPearsonGroups = pvalPearsonGroups(areas2keep);
-% rSpearmanGroups = rSpearmanGroups(areas2keep);
-% pvalSpearmanGroups = pvalSpearmanGroups(areas2keep);
-% groupedUnitInds = groupedUnitInds(areas2keep);
-% areaGroups = areaGroups(areas2keep);
-% 
-% % Work out correlated unit proportions in area groups
-% spikingPupilCorr.areaGroups = calcPupilCorrFractions( ...
-%   rPearsonGroups, pvalPearsonGroups, rSpearmanGroups, pvalSpearmanGroups, ...
-%   alpha, groupedUnitInds);
-% spikingPupilCorr.areaGroups.areaAcronyms = areaGroups;
-% 
-% % Select areas of interest
-% nAreas = numel(areasOI);
-% rPearsonOI = cell(nAreas,1);
-% pvalPearsonOI = cell(nAreas,1);
-% rSpearmanOI = cell(nAreas,1);
-% pvalSpearmanOI = cell(nAreas,1);
-% groupedUnitInds = cell(nAreas,1);
-% for iArea = 1:nAreas
-%   areaInds = getAreaInds(areasOI{iArea}, infraslowAnalyses.areaSummaries.areaTable);
-%   rPearsonOI{iArea} = concatenateCells(rPearson(areaInds));
-%   pvalPearsonOI{iArea} = concatenateCells(pvalPearson(areaInds));
-%   rSpearmanOI{iArea} = concatenateCells(rSpearman(areaInds));
-%   pvalSpearmanOI{iArea} = concatenateCells(pvalSpearman(areaInds));
-%   groupedUnitInds{iArea} = concatenateCells( ...
-%     infraslowAnalyses.areaSummaries.groupedUnitInds(areaInds));
-% end
-% 
-% % Work out correlated unit proportions in area groups
-% spikingPupilCorr.areasOI = calcPupilCorrFractions( ...
-%   rPearsonOI, pvalPearsonOI, rSpearmanOI, pvalSpearmanOI, ...
-%   alpha, groupedUnitInds);
-% spikingPupilCorr.areasOI.areaAcronyms = areasOI;
-% 
-% % Sort areas large to small positive fraction
+
+% Load preprocessed data
+if ~exist('infraslowData', 'var')
+  preprocessedDataFile = fullfile(processedDataFolder, 'bwmPreprocessedData2.mat');
+  load(preprocessedDataFile);
+end
+
+% Load data analysis results
+if ~exist('infraslowAnalyses', 'var')
+  analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
+  load(analysisResultsFile);
+end
+
+% Correlate individual unit activity with the pupil area: organise by recording
+nRecs = numel(infraslowData.experimentData);
+rPearson = cell(nRecs,1);
+pvalPearson = cell(nRecs,1);
+rSpearman = cell(nRecs,1);
+pvalSpearman = cell(nRecs,1);
+for iRec = 1:nRecs
+  disp(['Progress: ' num2str(100*iRec/nRecs) '%']);
+  expData = infraslowData.experimentData{iRec};
+  if isfield(expData, 'spikeCounts')
+    nUnits = expData.nUnits;
+    rPearson{iRec} = NaN(nUnits,1);
+    pvalPearson{iRec} = NaN(nUnits,1);
+    rSpearman{iRec} = NaN(nUnits,1);
+    pvalSpearman{iRec} = NaN(nUnits,1);
+
+    if ~isempty(expData.leftPupilAreaSize) || ~isempty(expData.rightPupilAreaSize)
+      unitSpikeCounts = full(expData.spikeCounts);
+      spikeTimeBins = expData.spikeTimeBins;
+      if excludeMovement
+        [spikeTimeBins, noMovementInds] = selectArrayValues( ...
+          spikeTimeBins, expData.noMovementIntervals);
+        unitSpikeCounts = unitSpikeCounts(noMovementInds);
+      end
+      [unitSpikeCounts, downsampledTimes] = resampleSpikeCounts( ...
+        unitSpikeCounts, stepsize=1/expData.samplingRate, ...
+        newStepsize=1/downsampledRate); % Downsample spiking data
+
+      % Get the pupil area size
+      if ~isempty(expData.leftPupilAreaSize) && ~isempty(expData.rightPupilAreaSize)
+        pupilAreaSize = mean([expData.leftPupilAreaSize; expData.rightPupilAreaSize]);
+      elseif ~isempty(expData.leftPupilAreaSize)
+        pupilAreaSize = expData.leftPupilAreaSize;
+      elseif ~isempty(expData.rightPupilAreaSize)
+        pupilAreaSize = expData.rightPupilAreaSize;
+      else
+        continue
+      end
+
+      % Filter the pupil area size
+      pupilAreaSizeFilt = pupilAreaSize;
+      valueExists = ~isnan(pupilAreaSize);
+      sr = 1/mean(diff(expData.spikeTimeBins));
+      d = designfilt('lowpassiir', ...
+        'PassbandFrequency',pupilPassbandFrequency, ...
+        'StopbandFrequency',pupilStopbandFrequency, ...
+        'PassbandRipple',0.5, 'StopbandAttenuation',1, ...
+        'DesignMethod','butter', 'SampleRate',sr);
+      pupilAreaSizeFilt(valueExists) = filtfilt(d,pupilAreaSize(valueExists));
+
+      % Exclude movement periods
+      if excludeMovement
+        pupilAreaSizeFilt = pupilAreaSizeFilt(noMovementInds);
+      end
+
+      if averagedPupilDownsampling
+        % Average the pupil area size (most accurate downsampling)
+        averagedPupilAreaSize = movmean(pupilAreaSizeFilt, ...
+          round(expData.samplingRate/downsampledRate), 'omitnan');
+        downsampledPupilAreaSize = interp1(spikeTimeBins, averagedPupilAreaSize, ...
+          downsampledTimes, 'linear', 'extrap');
+      else
+        % Downsample the pupil area size
+        downsampledPupilAreaSize = interp1(spikeTimeBins, pupilAreaSizeFilt, ...
+          downsampledTimes, 'linear', 'extrap'); %#ok<*UNRCH>
+      end
+
+      %fH = figure; plot(spikeTimeBins, pupilAreaSize, 'LineWidth',0.5); hold on
+      %plot(spikeTimeBins, pupilAreaSizeFilt, 'LineWidth',0.5);
+      %plot(downsampledTimes, downsampledPupilAreaSize, 'LineWidth',1.5);
+      %plot(downsampledTimes, averagedPupilAreaSize, 'LineWidth',1.5); hold off
+      %legend('smoothed','filtered','downsampled','averaged');
+      %close(fH);
+
+      if sum(isnan(downsampledPupilAreaSize)) == numel(downsampledPupilAreaSize) ...
+          || ~any(downsampledPupilAreaSize)
+        continue
+      end
+
+      % Correlate the two signals
+      [rPearson{iRec}, pvalPearson{iRec}] = ...
+        corrMulti(downsampledPupilAreaSize, unitSpikeCounts, 'Pearson');
+      rPearson{iRec} = rPearson{iRec}'; pvalPearson{iRec} = pvalPearson{iRec}';
+      [rSpearman{iRec}, pvalSpearman{iRec}] = ...
+        corrMulti(downsampledPupilAreaSize, unitSpikeCounts, 'Spearman');
+      rSpearman{iRec} = rSpearman{iRec}'; pvalSpearman{iRec} = pvalSpearman{iRec}';
+    end
+  end
+end
+spikingPupilCorr.recordings.rPearson = rPearson;
+spikingPupilCorr.recordings.pvalPearson = pvalPearson;
+spikingPupilCorr.recordings.rSpearman = rSpearman;
+spikingPupilCorr.recordings.pvalSpearman = pvalSpearman;
+
+
+% Correlate individual unit activity with the pupil area: organise by area
+nAreas = numel(infraslowAnalyses.areaSummaries.groupedUnitInds);
+rPearson = cell(nAreas,1);
+pvalPearson = cell(nAreas,1);
+rSpearman = cell(nAreas,1);
+pvalSpearman = cell(nAreas,1);
+for iArea = 1:nAreas
+  disp(['Progress: ' num2str(100*iArea/nAreas) '%']);
+  areaGroup = infraslowAnalyses.areaSummaries.areaTable.Brain_area_group{iArea};
+  if ~strcmpi(areaGroup, '???')
+    nUnits = size(infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}, 1);
+    rPearson{iArea} = NaN(nUnits,1);
+    pvalPearson{iArea} = NaN(nUnits,1);
+    rSpearman{iArea} = NaN(nUnits,1);
+    pvalSpearman{iArea} = NaN(nUnits,1);
+    prevExpInd = 0;
+    for iUnit = 1:nUnits
+
+      % Get the single unit spike count
+      expInd = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}(iUnit,1);
+      expData = infraslowData.experimentData{expInd};
+      if ~isempty(expData.leftPupilAreaSize) || ~isempty(expData.rightPupilAreaSize)
+        unitInd = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea}(iUnit,2);
+        unitSpikeCounts = full(expData.spikeCounts(unitInd,:));
+        spikeTimeBins = expData.spikeTimeBins;
+        if excludeMovement
+          [spikeTimeBins, noMovementInds] = selectArrayValues( ...
+            spikeTimeBins, expData.noMovementIntervals);
+          unitSpikeCounts = unitSpikeCounts(noMovementInds);
+        end
+        [unitSpikeCounts, downsampledTimes] = resampleSpikeCounts( ...
+          unitSpikeCounts, stepsize=1/expData.samplingRate, ...
+          newStepsize=1/downsampledRate); % Downsample spiking data
+        if size(unitSpikeCounts,2) == 1
+          unitSpikeCounts = unitSpikeCounts';
+        end
+
+        % Get the pupil area size
+        if expInd ~= prevExpInd
+          if ~isempty(expData.leftPupilAreaSize) && ~isempty(expData.rightPupilAreaSize)
+            pupilAreaSize = mean([expData.leftPupilAreaSize; expData.rightPupilAreaSize]);
+          elseif ~isempty(expData.leftPupilAreaSize)
+            pupilAreaSize = expData.leftPupilAreaSize;
+          elseif ~isempty(expData.rightPupilAreaSize)
+            pupilAreaSize = expData.rightPupilAreaSize;
+          else
+            break
+          end
+
+          % Filter the pupil area size
+          pupilAreaSizeFilt = pupilAreaSize;
+          valueExists = ~isnan(pupilAreaSize);
+          sr = 1/mean(diff(expData.spikeTimeBins));
+          d = designfilt('lowpassiir', ...
+            'PassbandFrequency',pupilPassbandFrequency, ...
+            'StopbandFrequency',pupilStopbandFrequency, ...
+            'PassbandRipple',0.5, 'StopbandAttenuation',1, ...
+            'DesignMethod','butter', 'SampleRate',sr);
+          pupilAreaSizeFilt(valueExists) = filtfilt(d,pupilAreaSize(valueExists));
+
+          % Exclude movement periods
+          if excludeMovement
+            pupilAreaSizeFilt = pupilAreaSizeFilt(noMovementInds);
+          end
+
+          if averagedPupilDownsampling
+            % Average the pupil area size (most accurate downsampling)
+            averagedPupilAreaSize = movmean(pupilAreaSizeFilt, ...
+              round(expData.samplingRate/downsampledRate), 'omitnan');
+            downsampledPupilAreaSize = interp1(spikeTimeBins, averagedPupilAreaSize, ...
+              downsampledTimes, 'linear', 'extrap');
+          else
+            % Downsample the pupil area size
+            downsampledPupilAreaSize = interp1(spikeTimeBins, pupilAreaSizeFilt, ...
+              downsampledTimes, 'linear', 'extrap'); %#ok<*UNRCH>
+          end
+
+          %fH = figure; plot(spikeTimeBins, pupilAreaSize, 'LineWidth',0.5); hold on
+          %plot(spikeTimeBins, pupilAreaSizeFilt, 'LineWidth',0.5);
+          %plot(downsampledTimes, downsampledPupilAreaSize, 'LineWidth',1.5);
+          %plot(downsampledTimes, averagedPupilAreaSize, 'LineWidth',1.5); hold off
+          %legend('smoothed','filtered','downsampled','averaged');
+          %close(fH);
+        end
+        if sum(isnan(downsampledPupilAreaSize)) == numel(downsampledPupilAreaSize) ...
+            || ~any(downsampledPupilAreaSize)
+          continue
+        end
+
+        % Correlate the two signals
+        [rPearson{iArea}(iUnit), pvalPearson{iArea}(iUnit)] = ...
+          corrMulti(downsampledPupilAreaSize, unitSpikeCounts, 'Pearson');
+        [rSpearman{iArea}(iUnit), pvalSpearman{iArea}(iUnit)] = ...
+          corrMulti(downsampledPupilAreaSize, unitSpikeCounts, 'Spearman');
+      end
+
+      prevExpInd = expInd;
+    end
+  end
+end
+
+% Work out correlated unit proportions in single areas
+spikingPupilCorr.singleAreas = calcPupilCorrFractions( ...
+  rPearson, pvalPearson, rSpearman, pvalSpearman, ...
+  alpha, infraslowAnalyses.areaSummaries.groupedUnitInds);
+
+% Group areas
+areaGroups = unique(infraslowAnalyses.areaSummaries.areaTable.Brain_area_group);
+nAreas = numel(areaGroups);
+rPearsonGroups = cell(nAreas,1);
+pvalPearsonGroups = cell(nAreas,1);
+rSpearmanGroups = cell(nAreas,1);
+pvalSpearmanGroups = cell(nAreas,1);
+groupedUnitInds = cell(nAreas,1);
+for iArea = 1:nAreas
+  areaInds = ismember( ...
+    infraslowAnalyses.areaSummaries.areaTable.Brain_area_group, areaGroups{iArea});
+  rPearsonGroups{iArea} = concatenateCells(rPearson(areaInds));
+  pvalPearsonGroups{iArea} = concatenateCells(pvalPearson(areaInds));
+  rSpearmanGroups{iArea} = concatenateCells(rSpearman(areaInds));
+  pvalSpearmanGroups{iArea} = concatenateCells(pvalSpearman(areaInds));
+  groupedUnitInds{iArea} = concatenateCells( ...
+    infraslowAnalyses.areaSummaries.groupedUnitInds(areaInds));
+end
+areas2keep = ~ismember(areaGroups, '???');
+rPearsonGroups = rPearsonGroups(areas2keep);
+pvalPearsonGroups = pvalPearsonGroups(areas2keep);
+rSpearmanGroups = rSpearmanGroups(areas2keep);
+pvalSpearmanGroups = pvalSpearmanGroups(areas2keep);
+groupedUnitInds = groupedUnitInds(areas2keep);
+areaGroups = areaGroups(areas2keep);
+
+% Work out correlated unit proportions in area groups
+spikingPupilCorr.areaGroups = calcPupilCorrFractions( ...
+  rPearsonGroups, pvalPearsonGroups, rSpearmanGroups, pvalSpearmanGroups, ...
+  alpha, groupedUnitInds);
+spikingPupilCorr.areaGroups.areaAcronyms = areaGroups;
+
+% Select areas of interest
+nAreas = numel(areasOI);
+rPearsonOI = cell(nAreas,1);
+pvalPearsonOI = cell(nAreas,1);
+rSpearmanOI = cell(nAreas,1);
+pvalSpearmanOI = cell(nAreas,1);
+groupedUnitInds = cell(nAreas,1);
+for iArea = 1:nAreas
+  areaInds = getAreaInds(areasOI{iArea}, infraslowAnalyses.areaSummaries.areaTable);
+  rPearsonOI{iArea} = concatenateCells(rPearson(areaInds));
+  pvalPearsonOI{iArea} = concatenateCells(pvalPearson(areaInds));
+  rSpearmanOI{iArea} = concatenateCells(rSpearman(areaInds));
+  pvalSpearmanOI{iArea} = concatenateCells(pvalSpearman(areaInds));
+  groupedUnitInds{iArea} = concatenateCells( ...
+    infraslowAnalyses.areaSummaries.groupedUnitInds(areaInds));
+end
+
+% Work out correlated unit proportions in area groups
+spikingPupilCorr.areasOI = calcPupilCorrFractions( ...
+  rPearsonOI, pvalPearsonOI, rSpearmanOI, pvalSpearmanOI, ...
+  alpha, groupedUnitInds);
+spikingPupilCorr.areasOI.areaAcronyms = areasOI;
+
+% Sort areas large to small positive fraction
 [sortedAreasAll, areaOrderAll] = sort( ...
   spikingPupilCorr.singleAreas.positiveSpearmanFractionsMeans(:,1), 'descend');
 areaOrderAll = areaOrderAll(~isnan(sortedAreasAll));
-% spikingPupilCorr.singleAreas.fractionTable = table( ...
-%   infraslowAnalyses.areaSummaries.areaTable.Brain_area_name(areaOrderAll), ...
-%   sortedAreasAll(~isnan(sortedAreasAll)), ...
-%   'VariableNames', {'Brain_area', 'Positive_cell_fraction'});
-% disp(spikingPupilCorr.singleAreas.fractionTable);
-% %disp(infraslowAnalyses.spikingPupilCorr.singleAreas.fractionTable);
-% 
-% [sortedAreasOI, areaOrderOI] = sort( ...
-%   spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(:,1), 'descend');
-% areaOrderOI = areaOrderOI(~isnan(sortedAreasOI));
-% spikingPupilCorr.areasOI.fractionTable = table(areasOI(areaOrderOI), ...
-%   spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(areaOrderOI,1), ...
-%   'VariableNames', {'Brain_area', 'Positive_cell_fraction'});
-% disp(spikingPupilCorr.areasOI.fractionTable);
-% %disp(infraslowAnalyses.spikingPupilCorr.areasOI.fractionTable);
-% 
-% % Save the data
-% spikingPupilCorr.timeOfCompletion = datetime;
-% if excludeMovement
-%   infraslowAnalyses.spikingPupilCorr_noMovement = spikingPupilCorr;
-% else
-%   infraslowAnalyses.spikingPupilCorr = spikingPupilCorr;
-% end
-% save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');
+spikingPupilCorr.singleAreas.fractionTable = table( ...
+  infraslowAnalyses.areaSummaries.areaTable.Brain_area_name(areaOrderAll), ...
+  sortedAreasAll(~isnan(sortedAreasAll)), ...
+  'VariableNames', {'Brain_area', 'Positive_cell_fraction'});
+disp(spikingPupilCorr.singleAreas.fractionTable);
+%disp(infraslowAnalyses.spikingPupilCorr.singleAreas.fractionTable);
+
+[sortedAreasOI, areaOrderOI] = sort( ...
+  spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(:,1), 'descend');
+areaOrderOI = areaOrderOI(~isnan(sortedAreasOI));
+spikingPupilCorr.areasOI.fractionTable = table(areasOI(areaOrderOI), ...
+  spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(areaOrderOI,1), ...
+  'VariableNames', {'Brain_area', 'Positive_cell_fraction'});
+disp(spikingPupilCorr.areasOI.fractionTable);
+%disp(infraslowAnalyses.spikingPupilCorr.areasOI.fractionTable);
+
+% Save the data
+spikingPupilCorr.timeOfCompletion = datetime;
+if excludeMovement
+  infraslowAnalyses.spikingPupilCorr_noMovement = spikingPupilCorr;
+else
+  infraslowAnalyses.spikingPupilCorr = spikingPupilCorr;
+end
+save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');
 
 % Display area positive fraction violins or lines
 if strcmpi(violinOrLines, 'violin')
