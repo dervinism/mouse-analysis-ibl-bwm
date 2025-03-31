@@ -11,6 +11,7 @@ alpha = 0.05; % Significance level
 excludeMovement = false;
 violinOrLines = 'lines'; % 'violin' or 'lines'
 includeAllAreas = false;
+groupAreas = true;
 
 % Load preprocessed data
 if ~exist('infraslowData', 'var')
@@ -125,6 +126,7 @@ rPearson = cell(nAreas,1);
 pvalPearson = cell(nAreas,1);
 rSpearman = cell(nAreas,1);
 pvalSpearman = cell(nAreas,1);
+rSpearmanAll = [];
 for iArea = 1:nAreas
   disp(['Progress: ' num2str(100*iArea/nAreas) '%']);
   areaGroup = infraslowAnalyses.areaSummaries.areaTable.Brain_area_group{iArea};
@@ -217,6 +219,7 @@ for iArea = 1:nAreas
 
       prevExpInd = expInd;
     end
+    rSpearmanAll = [rSpearmanAll; rSpearman{iArea}];
   end
 end
 
@@ -357,49 +360,116 @@ if strcmpi(violinOrLines, 'violin')
   legend('boxoff');
 
 elseif strcmpi(violinOrLines, 'lines')
+  fontSize = 18;
   fH = figure;
-  if ~includeAllAreas
-    areaOrderAll = intersect(areaOrderAll, find(contains(areaLabels(:,1), {'Th','Cx','Hp'})), 'stable');
-  end
-  nAreas = numel(areaOrderAll);
-  lineCount = 0;
-  for iArea = 1:nAreas
-    areaData = spikingPupilCorr.singleAreas.positiveSpearmanFractionsPerRec{areaOrderAll(iArea)}(:,1);
-    if ~isempty(areaData)
-      [posFractionMean, posFractionCI95] = datamean(areaData);
-      if contains(areaLabels(areaOrderAll(iArea),1), 'Th')
-        lineColour = 'b';
-      elseif contains(areaLabels(areaOrderAll(iArea),1), 'Cx')
-        lineColour = 'g';
-      elseif contains(areaLabels(areaOrderAll(iArea),1), 'Hp')
-        lineColour = 'm';
-      else
-        lightGrey = 211;
-        lineColour = [lightGrey lightGrey lightGrey]./256;
+  if groupAreas
+    includeAreaInds = [1:14 17:21 24 29:46];
+    nAreas = numel(areaOrderOI);
+    lineCount = 0;
+    meanAggregate = [];
+    for iArea = 1:nAreas
+      areaData = spikingPupilCorr.areasOI.positiveSpearmanFractionsPerRec{areaOrderOI(iArea)}(:,1);
+      if ~isempty(areaData) && ismember(areaOrderOI(iArea), includeAreaInds)
+        [posFractionMean, posFractionCI95] = datamean(areaData);
+        if ismember(areasOI{areaOrderOI(iArea)}, ...
+            {'Th'; 'nCx'; 'paCx'; 'pCx'; 'Hp'; 'AA'; 'BG'; 'Hyp'; 'MBr'; ...
+            'Cereb'; 'CLA'; 'BS'; 'BG'; 'EPT'; 'BF'; 'STh'})
+          meanAggregate = [meanAggregate; posFractionMean];
+        end
+        if contains(areasOI(areaOrderOI(iArea)), {'Th', 'VP', 'PO', 'LG', 'LP'}) && ~strcmpi(areasOI(areaOrderOI(iArea)), 'STh')
+          lineColour = 'b';
+        elseif contains(areasOI(areaOrderOI(iArea)), {'Cx', 'SS', 'RSP', 'VIS'})
+          lineColour = 'g';
+        elseif contains(areasOI(areaOrderOI(iArea)), {'Hp', 'CA', 'DG'})
+          lineColour = 'm';
+        else
+          lightGrey = 211;
+          lineColour = [lightGrey lightGrey lightGrey]./256;
+        end
+        lineCount = lineCount + 1;
+        x = [lineCount lineCount];
+        y = [min(areaData) max(areaData)];
+        plot(x, y, ':', 'color',lineColour, 'LineWidth',0.75);
+        if lineCount == 1
+          hold on
+        end
+        if posFractionCI95(1)
+          y = [max([y(1) posFractionMean+posFractionCI95(1)]) ...
+            min([y(2) posFractionMean+posFractionCI95(2)])];
+          plot(x, y, 'color',lineColour, 'LineWidth',3.5);
+        end
+        plot(x(1), posFractionMean, '.', 'color','k', 'MarkerSize',10);
       end
-      lineCount = lineCount + 1;
-      x = [lineCount lineCount];
-      y = [min(areaData) max(areaData)];
-      plot(x, y, 'color',lineColour);
-      if lineCount == 1
-        hold on
-      end
-      if posFractionCI95(1)
-        y = [max([y(1) posFractionMean+posFractionCI95(1)]) ...
-          min([y(2) posFractionMean+posFractionCI95(2)])];
-        plot(x, y, 'color',lineColour, 'LineWidth',1.5);
-      end
-      plot(x(1), posFractionMean, '.', 'color','k', 'MarkerSize',5);
     end
+    %meanFraction = sum(rSpearmanAll > 0)/numel(rSpearmanAll);
+    %meanFraction = mean(meanAggregate);
+    %p = plot([0.5 lineCount+0.5], [meanFraction meanFraction], 'k:');
+    %uistack(p,'bottom');
+    hold off
+    xticks(1:lineCount);
+    xticklabels(areasOI_full(areaOrderOI(ismember(areaOrderOI, includeAreaInds))));
+    ylabel('Fraction')
+
+    % Tidy the figure
+    set(fH, 'Color', 'white');
+    ax = gca;
+    set(ax, 'box', 'off');
+    set(ax, 'TickDir', 'out');
+    yTicks = get(ax, 'YTick');
+    if numel(yTicks) > 8
+      set(ax, 'YTick', yTicks(1:2:end));
+    end
+    ax.FontSize = fontSize - 4;
+    %set(get(ax, 'XAxis'), 'FontWeight', 'bold');
+    set(get(ax, 'YAxis'), 'FontWeight', 'bold');
+    xlim([0.5 lineCount+0.5])
+    ylim([0.35 0.85])
+  else
+    if ~includeAllAreas %#ok<*UNRCH>
+      areaOrderAll = intersect(areaOrderAll, find(contains(areaLabels(:,1), {'Th','Cx','Hp'})), 'stable');
+    end
+    nAreas = numel(areaOrderAll);
+    lineCount = 0;
+    for iArea = 1:nAreas
+      areaData = spikingPupilCorr.singleAreas.positiveSpearmanFractionsPerRec{areaOrderAll(iArea)}(:,1);
+      if ~isempty(areaData)
+        [posFractionMean, posFractionCI95] = datamean(areaData);
+        if contains(areaLabels(areaOrderAll(iArea),1), 'Th')
+          lineColour = 'b';
+        elseif contains(areaLabels(areaOrderAll(iArea),1), 'Cx')
+          lineColour = 'g';
+        elseif contains(areaLabels(areaOrderAll(iArea),1), 'Hp')
+          lineColour = 'm';
+        else
+          lightGrey = 211;
+          lineColour = [lightGrey lightGrey lightGrey]./256;
+        end
+        lineCount = lineCount + 1;
+        x = [lineCount lineCount];
+        y = [min(areaData) max(areaData)];
+        plot(x, y, 'color',lineColour);
+        if lineCount == 1
+          hold on
+        end
+        if posFractionCI95(1)
+          y = [max([y(1) posFractionMean+posFractionCI95(1)]) ...
+            min([y(2) posFractionMean+posFractionCI95(2)])];
+          plot(x, y, 'color',lineColour, 'LineWidth',1.5);
+        end
+        plot(x(1), posFractionMean, '.', 'color','k', 'MarkerSize',5);
+      end
+    end
+    hold off
+    xticks(1:nAreas);
+    xticklabels(areaLabels(areaOrderAll,2));
   end
-  hold off
 end
 
 
 
 %% Local functions
 function dataSummary = calcPupilCorrFractions(rPearson, pvalPearson, ...
-  rSpearman, pvalSpearman, alpha, groupedUnitInds)
+  rSpearman, pvalSpearman, alpha, groupedUnitInds) %#ok<*DEFNU>
 
 % Initialise data containers
 nAreas = numel(rPearson);

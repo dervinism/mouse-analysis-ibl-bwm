@@ -21,7 +21,7 @@ end
 % Extract data
 nAreas = size(areaLabels,1);
 areaPhase = cell(nAreas,1);
-areaPhaseOI = cell(size(areasOI));
+areaPhaseReverse = cell(nAreas,1);
 for iArea = 1:size(areaLabels,1)
   areaName = strrep(areaLabels{iArea,2}, ' ', '_');
   areaName = strrep(areaName, '-', '_');
@@ -36,6 +36,7 @@ for iArea = 1:size(areaLabels,1)
 
         % Agregate data
         areaPhase{iArea} = [areaPhase{iArea}; phase(:,fInds)];
+        areaPhaseReverse{iArea} = [areaPhaseReverse{iArea}; flipud(phase(:,fInds))];
       end
     end
   end
@@ -107,8 +108,26 @@ if allAreaHistos
 end
 
 if oldAreaHistos
-  %[binCounts, binLocs, totalCounts, significantFractions, ...
-  %  phaseMeans, phaseSDs] = phaseHistrogramWrap(areaOIPhase);
+  options = struct();
+  options.mainFolder = figFolder;
+  options.histosSubfolder = 'phaseHistos';
+  options.mapsSubfolder = 'phaseMaps';
+  options.figSize = 15;
+  options.figTitle = 'PUPIL';
+  options.freqLim = [10e-3 2];
+  phaseShift = 0; %pi/2;
+  options.phaseLimHisto = phaseLim + phaseShift;
+  options.phaseLimMap = phaseLim - phaseShift;
+  options.xLabelHist = '# units';
+  options.limExpansion = pi/4; %pi/2;
+  % options.mask = {[options.freqLim(1) options.phaseLimMap(end)+options.limExpansion; 2 options.phaseLimMap(end)+options.limExpansion;...
+  %   options.freqLim(1) pi/2; 2 options.phaseLimMap(end)+options.limExpansion];...
+  %   [0.05 options.phaseLimMap(1)-options.limExpansion; options.freqLim(end) -pi/2;...
+  %   0.05 options.phaseLimMap(1)-options.limExpansion; options.freqLim(end) options.phaseLimMap(1)-options.limExpansion]};
+  options.mask = {};
+  options.iAreasOI = 35; %1:numel(areasOI);
+  [phaseHistos, distributionStats] = phaseHistosPlotMaster([true false false], ...
+    areasOI, {'awake'}, FOI, {areaOIPhase}, edges+phaseShift, options); %#ok<*ASGLU>
 
   options = struct();
   options.mainFolder = figFolder;
@@ -126,9 +145,9 @@ if oldAreaHistos
     options.freqLim(1) pi/2; 2 options.phaseLimMap(end)+options.limExpansion];...
     [0.05 options.phaseLimMap(1)-options.limExpansion; options.freqLim(end) -pi/2;...
     0.05 options.phaseLimMap(1)-options.limExpansion; options.freqLim(end) options.phaseLimMap(1)-options.limExpansion]};
-  options.iAreasOI = 1:numel(areasOI);
+  options.iAreasOI = 1:numel(areaLabels(:,2));
   [phaseHistos, distributionStats] = phaseHistosPlotMaster([false false true], ...
-    areasOI, {'awake'}, FOI, {areaOIPhase}, edges+phaseShift, options);
+    areaLabels(:,2), {'awake'}, FOI, {areaPhaseReverse}, edges+phaseShift, options);
 end
 
 
