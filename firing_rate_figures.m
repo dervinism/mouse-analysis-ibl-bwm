@@ -23,6 +23,7 @@ end
 
 % Compile firing rates
 nAreas = size(areaLabels,1);
+nCentiles = ceil(numel(percentiles)/2);
 firingRates = cell(nAreas,1);
 for iArea = 1:nAreas
   areaInds = infraslowAnalyses.areaSummaries.groupedUnitInds{iArea};
@@ -74,7 +75,6 @@ for iArea = 1:nAreas
     topFiringRate_exp = zeros(nUnits,nCentiles);
     if ~isempty(pupilAreaSize)
       percentileValues = prctile(pupilAreaSize,percentiles);
-      nCentiles = ceil(numel(percentiles)/2);
       for iCent = 1:nCentiles
         bottomPupilAreaSizeMask = pupilAreaSize <= percentileValues(iCent);
         topPupilAreaSizeMask = pupilAreaSize > percentileValues(end - iCent + 1);
@@ -93,10 +93,10 @@ for iArea = 1:nAreas
       logTopFiringRate_exp = nan(nUnits,nCentiles);
       logFiringRateChange_exp = nan(nUnits,nCentiles);
     end
-    firingRates_area(unitMask,:) = [rSpearman pvalSpearman ...
-      firingRates_exp logFiringRates_exp ...
-      bottomFiringRate_exp topFiringRate_exp firingRateChange_exp ...
-      logBottomFiringRate_exp logTopFiringRate_exp logFiringRateChange_exp];
+    firingRates_area(unitMask,:) = [rSpearman pvalSpearman ...               % 1 2
+      firingRates_exp logFiringRates_exp ...                                 % 3 4
+      bottomFiringRate_exp topFiringRate_exp firingRateChange_exp ...        % 5:9  10:14  15:19
+      logBottomFiringRate_exp logTopFiringRate_exp logFiringRateChange_exp]; % 20:24  25:29  30:34
   end
   firingRates{iArea} = firingRates_area;
 end
@@ -158,13 +158,25 @@ end
 hold off
 
 % Create firing rate distribution figures: All types of units combined
+nAreas = numel(areasOI);
+firingRatesOI = cell(nAreas,1);
+binSize = 0.35;
+binEdges = -3:binSize:3;
+bins = binEdges(1:end-1)+binSize/2;
 for iArea = 1:nAreas
-  areaFiringRates = firingRates{iArea};
-  firingRate = areaFiringRates(:,4);
-  firingRateChange = abs(areaFiringRates(:,30));
-  plot(firingRate, firingRateChange, '.', 'MarkerSize',1);
-  if iArea == 1
-    hold on
-  end
+  areaInds = getAreaInds(areasOI{iArea}, infraslowAnalyses.areaSummaries.areaTable);
+  firingRatesOI{iArea} = concatenateCells(firingRates(areaInds));
+  bottomFiringRate = firingRatesOI{iArea}(:,20);
+  topFiringRate = firingRatesOI{iArea}(:,25);
+  bottomFiringRateDistro = histcounts(bottomFiringRate, binEdges);
+  topFiringRateDistro = histcounts(topFiringRate, binEdges);
+  
+  fH = figure;
+  plot(bins, bottomFiringRateDistro);
+  hold on
+  plot(bins, topFiringRateDistro);
+  hold off
+  title(areasOI{iArea})
+  legend('bottom 12.5%','top 12.5%')
+  close(fH);
 end
-hold off
