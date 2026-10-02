@@ -160,18 +160,28 @@ end
 hold off
 
 % Correlate positive fraction and firing rate changes
-figure;
 nAreasToVisualise = numel(areaOrderAll);
-for iArea = 1:nAreasToVisualise
-  areaFiringRates = firingRates{areaOrderAll(iArea)};
-  positiveFraction = sum(areaFiringRates(:,1)>=0)/size(areaFiringRates,1);
-  firingRateChange = mean(abs(areaFiringRates(:,30)), 'omitnan');
-  plot(positiveFraction, firingRateChange, '.', 'MarkerSize',1);
-  if iArea == 1
-    hold on
+for type = 1:3
+  figure;
+  for iArea = 1:nAreasToVisualise
+    areaFiringRates = firingRates{areaOrderAll(iArea)};
+    positiveUnitMask = areaFiringRates(:,1)>=0;
+    positiveFraction = sum(positiveUnitMask)/size(areaFiringRates,1);
+    if type == 1
+      unitsOI = true(size(positiveUnitMask));
+    elseif type == 2
+      unitsOI = positiveUnitMask;
+    elseif type == 3
+      unitsOI = ~positiveUnitMask;
+    end
+    firingRateChange = mean(abs(areaFiringRates(unitsOI,30)), 'omitnan');
+    plot(positiveFraction, firingRateChange, '.', 'MarkerSize',5);
+    if iArea == 1
+      hold on
+    end
   end
+  hold off
 end
-hold off
 %close all
 
 % Create firing rate distribution figures: All types of units combined
@@ -288,9 +298,16 @@ uolData_positiveFraction = [0.475467; 0.674299; 0.400523; 0.461996; ...
 allenData_areas = {'CA Allen', 'DG Allen', 'CA-DG Allen', 'Th Allen', ...
   'V1 Allen', 'V2 Allen', 'Cx Allen'};
 allenDdata_incMask = [true true false true true true false];
-allenData_firingRateChange = [-(0.675289 - 0.635800);
+% allenData_firingRateChange = [-(0.675289 - 0.635800);
+%                               0.539034 - 0.615952;
+%                               -0.06; %0.647850 - 0.631803;
+%                               0.933029 - 0.693471;
+%                               0.452149 - 0.481036;
+%                               0.476366 - 0.500610;
+%                               0.471062 - 0.496322];
+allenData_firingRateChange = [0.675289 - 0.635800;
                               0.539034 - 0.615952;
-                              -0.06; %0.647850 - 0.631803;
+                              0.647850 - 0.631803;
                               0.933029 - 0.693471;
                               0.452149 - 0.481036;
                               0.476366 - 0.500610;
@@ -301,8 +318,9 @@ allenData_positiveFraction = [0.400404; 0.235446; 0.384781; 0.781899; ...
 % Firing rate summary figures: Firing rate change
 incMask = [false false false false false true true false true true true ...
   true true true false false false false false false false false false ...
-  false false false false false false false false true true true true ...
-  false true true true true true true true true true true];
+  false false false false false false false false false false false false ...
+  true true true true true true true true true true true true false false ...
+  false];
 positiveSpearmanFractionsMeans = ...
   infraslowAnalyses.spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(:,1);
 if includeExtraData
@@ -320,7 +338,9 @@ end
   positiveSpearmanFractionsMeans, 'descend');
 areaOrderOI = areaOrderOI(~isnan(sortedAreasOI));
 
-includeAreaInds = [1:14 17:21 24 29:numel(incMask)];
+%includeAreaInds = [1:14 17:21 24 29:numel(incMask)];
+%includeAreaInds = [1:14 17:18, 24 29:32 36:numel(incMask)];
+includeAreaInds = [1:14 17:18, 24 29:32 36:47 51:numel(incMask)];
 nAreas = numel(areaOrderOI);
 fontSize = 18;
 fH = figure;
@@ -343,11 +363,11 @@ for iArea = 1:nAreas
     end
 
     if contains(areasOI(areaOrderOI(iArea)), {'Th', 'VP', 'PO', 'LG', 'LP'}) && ~strcmpi(areasOI(areaOrderOI(iArea)), 'STh')
-      lineColour = 'b';
+      lineColour = [0.620 0.855 0.957]; %'b';
     elseif contains(areasOI(areaOrderOI(iArea)), {'Cx', 'SS', 'RSP', 'VIS'})
-      lineColour = 'g';
+      lineColour = [0.843 0.788 0.361]; %'g';
     elseif contains(areasOI(areaOrderOI(iArea)), {'Hp', 'CA', 'DG'})
-      lineColour = 'm';
+      lineColour = [0.867 0.561 0.891]; %'m';
     else
       lightGrey = 211;
       lineColour = [lightGrey lightGrey lightGrey]./256;
@@ -365,8 +385,11 @@ end
 plot([0.5 lineCount+0.5], [0 0], ':');
 hold off
 xticks(1:lineCount);
+areasOI_full{54} = 'Hp UoL';
+areasOI_full{60} = 'Hp Allen';
 xticklabels(areasOI_full(areaOrderOI(ismember(areaOrderOI, includeAreaInds))));
-ylabel('Fraction')
+xtickangle(45)
+ylabel('Log_{10}(Firing rate) change')
 
 % Tidy the figure
 set(fH, 'Color', 'white');
@@ -378,9 +401,67 @@ if numel(yTicks) > 8
   set(ax, 'YTick', yTicks(1:2:end));
 end
 ax.FontSize = fontSize - 4;
-set(get(ax, 'YAxis'), 'FontWeight', 'bold');
+%set(get(ax, 'YAxis'), 'FontWeight', 'bold');
 xlim([0.5 lineCount+0.5])
 %ylim([0.35 0.85])
+
+
+% % Firing rate summary figures: Firing rate variance
+% positiveSpearmanFractionsMeans = ...
+%   infraslowAnalyses.spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(:,1);
+% [sortedAreasOI, areaOrderOI] = sort( ...
+%   positiveSpearmanFractionsMeans, 'descend');
+% areaOrderOI = areaOrderOI(~isnan(sortedAreasOI));
+% 
+% includeAreaInds = [1:14 17:21 24 29:numel(areaOrderOI)];
+% nAreas = numel(areaOrderOI);
+% fontSize = 18;
+% fH = figure;
+% lineCount = 0;
+% for iArea = 1:nAreas
+%   if ismember(areaOrderOI(iArea), includeAreaInds)
+%     areaInds = getAreaInds(areasOI{areaOrderOI(iArea)}, infraslowAnalyses.areaSummaries.areaTable);
+%     firingRatesOI{iArea} = concatenateCells(firingRates(areaInds)); %#ok<*SAGROW>
+%     firingRateVar = var(firingRatesOI{iArea}(:,4));
+% 
+%     if contains(areasOI(areaOrderOI(iArea)), {'Th', 'VP', 'PO', 'LG', 'LP'}) && ~strcmpi(areasOI(areaOrderOI(iArea)), 'STh')
+%       lineColour = 'b';
+%     elseif contains(areasOI(areaOrderOI(iArea)), {'Cx', 'SS', 'RSP', 'VIS'})
+%       lineColour = 'g';
+%     elseif contains(areasOI(areaOrderOI(iArea)), {'Hp', 'CA', 'DG'})
+%       lineColour = 'm';
+%     else
+%       lightGrey = 211;
+%       lineColour = [lightGrey lightGrey lightGrey]./256;
+%     end
+%     lineCount = lineCount + 1;
+%     x = [lineCount lineCount];
+%     y = [0 firingRateVar];
+%     plot(x, y, '-', 'color',lineColour, 'LineWidth',1.5);
+%     if lineCount == 1
+%       hold on
+%     end
+%   end
+% end
+% plot([0.5 lineCount+0.5], [0 0], ':');
+% hold off
+% xticks(1:lineCount);
+% xticklabels(areasOI_full(areaOrderOI(ismember(areaOrderOI, includeAreaInds))));
+% ylabel('Fraction')
+% 
+% % Tidy the figure
+% set(fH, 'Color', 'white');
+% ax = gca;
+% set(ax, 'box', 'off');
+% set(ax, 'TickDir', 'out');
+% yTicks = get(ax, 'YTick');
+% if numel(yTicks) > 8
+%   set(ax, 'YTick', yTicks(1:2:end));
+% end
+% ax.FontSize = fontSize - 4;
+% set(get(ax, 'YAxis'), 'FontWeight', 'bold');
+% xlim([0.5 lineCount+0.5])
+% %ylim([0.35 0.85])
 
 
 % Firing rate summary figures: Firing rate change correlation
@@ -436,5 +517,5 @@ ax = gca;
 set(ax, 'box', 'off');
 set(ax, 'TickDir', 'out');
 ax.FontSize = fontSize - 4;
-set(get(ax, 'XAxis'), 'FontWeight', 'bold');
-set(get(ax, 'YAxis'), 'FontWeight', 'bold');
+%set(get(ax, 'XAxis'), 'FontWeight', 'bold');
+%set(get(ax, 'YAxis'), 'FontWeight', 'bold');

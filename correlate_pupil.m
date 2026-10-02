@@ -303,6 +303,18 @@ spikingPupilCorr.areasOI.fractionTable = table(areasOI(areaOrderOI), ...
 disp(spikingPupilCorr.areasOI.fractionTable);
 %disp(infraslowAnalyses.spikingPupilCorr.areasOI.fractionTable);
 
+% Perform stats
+fractionsPerRec = cell(size(spikingPupilCorr.areasOI.positiveSpearmanFractionsPerRec));
+for iArea = 1:nAreas
+  fractionsPerRec{iArea} = spikingPupilCorr.areasOI.positiveSpearmanFractionsPerRec{iArea}(:,1);
+end
+%spikingPupilCorr.areasOI.stats = meanTest2(fractionsPerRec(areaOrderOI), 'ranksum');
+spikingPupilCorr.areasOI.stats = meanTest2(fractionsPerRec(areaOrderOI), 'ttest');
+for iComp = 1:numel(spikingPupilCorr.areasOI.stats)
+  spikingPupilCorr.areasOI.stats(iComp).area1 = areasOI{areaOrderOI(spikingPupilCorr.areasOI.stats(iComp).iCol1)};
+  spikingPupilCorr.areasOI.stats(iComp).area2 = areasOI{areaOrderOI(spikingPupilCorr.areasOI.stats(iComp).iCol2)};
+end
+
 % Save the data
 spikingPupilCorr.timeOfCompletion = datetime;
 if excludeMovement
@@ -363,7 +375,7 @@ elseif strcmpi(violinOrLines, 'lines')
   fontSize = 18;
   fH = figure;
   if groupAreas
-    includeAreaInds = [1:14 17:21 24 29:46];
+    includeAreaInds = [1:14 17:18, 24 29:32 36:47];
     nAreas = numel(areaOrderOI);
     lineCount = 0;
     meanAggregate = [];
@@ -377,11 +389,11 @@ elseif strcmpi(violinOrLines, 'lines')
           meanAggregate = [meanAggregate; posFractionMean];
         end
         if contains(areasOI(areaOrderOI(iArea)), {'Th', 'VP', 'PO', 'LG', 'LP'}) && ~strcmpi(areasOI(areaOrderOI(iArea)), 'STh')
-          lineColour = 'b';
-        elseif contains(areasOI(areaOrderOI(iArea)), {'Cx', 'SS', 'RSP', 'VIS'})
-          lineColour = 'g';
+          lineColour = [0.620 0.855 0.957]; %'b';
+        elseif contains(areasOI(areaOrderOI(iArea)), {'Cx', 'SS', 'RSP', 'VIS', 'V2', 'V1'})
+          lineColour = [0.843 0.788 0.361]; %'g';
         elseif contains(areasOI(areaOrderOI(iArea)), {'Hp', 'CA', 'DG'})
-          lineColour = 'm';
+          lineColour = [0.867 0.561 0.891]; %'m';
         else
           lightGrey = 211;
           lineColour = [lightGrey lightGrey lightGrey]./256;
@@ -398,7 +410,7 @@ elseif strcmpi(violinOrLines, 'lines')
             min([y(2) posFractionMean+posFractionCI95(2)])];
           plot(x, y, 'color',lineColour, 'LineWidth',3.5);
         end
-        plot(x(1), posFractionMean, '.', 'color','k', 'MarkerSize',10);
+        plot(x(1), posFractionMean, '.', 'color','k', 'MarkerSize',5);
       end
     end
     %meanFraction = sum(rSpearmanAll > 0)/numel(rSpearmanAll);
@@ -407,6 +419,11 @@ elseif strcmpi(violinOrLines, 'lines')
     %uistack(p,'bottom');
     hold off
     xticks(1:lineCount);
+    for iArea = 1:numel(areasOI_full)
+      if ~endsWith(areasOI_full{iArea}, '+')
+        areasOI_full{iArea} = [areasOI_full{iArea} '+']; %#ok<SAGROW>
+      end
+    end
     xticklabels(areasOI_full(areaOrderOI(ismember(areaOrderOI, includeAreaInds))));
     ylabel('Fraction')
 

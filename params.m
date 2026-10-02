@@ -46,27 +46,27 @@ areaLabels = { ...
   'MBr',    'APN',      'Anterior pretectal nucleus',                                          '';
   'nCx',    'APr',      'Area prostriata',                                                     'association';
   'MBr',    'AT',       'Anterior tegmental nucleus',                                          '';
-  'nCx',    'AUDd',     'Dorsal auditory area',                                                'association';
+  'nCx',    'AUDd',     'Dorsal auditory area',                                                'sensory';
   'nCx',    'AUDp',     'Primary auditory area',                                               'sensory';
-  'nCx',    'AUDpo',    'Posterior auditory area',                                             'association';
-  'nCx',    'AUDv',     'Ventral auditory area',                                               'association';
+  'nCx',    'AUDpo',    'Posterior auditory area',                                             'sensory';
+  'nCx',    'AUDv',     'Ventral auditory area',                                               'sensory';
   'Th',     'AV',       'Anteroventral nucleus of thalamus',                                   'association';
   'Hyp',    'AVP',      'Anteroventral preoptic nucleus',                                      '';
-  'AA',     'BLA',      'Basolateral amygdalar nucleus',                                       '';
-  'AA',     'BMA',      'Basomedial amygdalar nucleus',                                        '';
-  'AA',     'BST',      'Bed nuclei of the stria terminalis',                                  '';
+  'AA',     'BLA',      'Basolateral amygdalar nucleus',                                       'association';
+  'AA',     'BMA',      'Basomedial amygdalar nucleus',                                        'association';
+  'BF',     'BST',      'Bed nuclei of the stria terminalis',                                  '';
   'Hp',     'CA1',      'Field CA1',                                                           'association';
   'Hp',     'CA2',      'Field CA2',                                                           'association';
   'Hp',     'CA3',      'Field CA3',                                                           'association';
-  'AA',     'CEA',      'Central amygdalar nucleus',                                           '';
+  'AA',     'CEA',      'Central amygdalar nucleus',                                           'association';
   'Cereb',  'CENT2',    'Lobule II',                                                           '';
   'Cereb',  'CENT3',    'Lobule III',                                                          '';
   'Th',     'CL',       'Central lateral nucleus of the thalamus',                             'motor';
-  'CLA',    'CLA',      'Claustrum',                                                           '';
+  'CLA',    'CLA',      'Claustrum',                                                           'association';
   'BS',     'CLI',      'Central linear nucleus raphe',                                        '';
   'Th',     'CM',       'Central medial nucleus of the thalamus',                              'motor';
-  'AA',     'COAa',     'Cortical amygdalar area, anterior part',                              '';
-  'AA',     'COAp',     'Cortical amygdalar area, posterior part',                             '';
+  'AA',     'COAa',     'Cortical amygdalar area, anterior part',                              'association';
+  'AA',     'COAp',     'Cortical amygdalar area, posterior part',                             'association';
   'Cereb',  'COPY',     'Copula pyramidis',                                                    '';
   'BG',     'CP',       'Caudoputamen',                                                        '';
   'BS',     'CS',       'Superior central nucleus raphe',                                      '';
@@ -85,8 +85,8 @@ areaLabels = { ...
   'BS',     'ECU',      'External cuneate nucleus',                                            '';
   'paCx',   'ENTl',     'Entorhinal area, lateral part',                                       'association';
   'paCx',   'ENTm',     'Entorhinal area, medial part, dorsal zone',                           'association';
-  'AA',     'EPd',      'Endopiriform nucleus, dorsal part',                                   '';
-  'AA',     'EPv',      'Endopiriform nucleus, ventral part',                                  '';
+  'AA',     'EPd',      'Endopiriform nucleus, dorsal part',                                   'association';
+  'AA',     'EPv',      'Endopiriform nucleus, ventral part',                                  'association';
   'Th',     'Eth',      'Ethmoid nucleus of the thalamus',                                     'association';
   'Hp',     'FC',       'Fasciola cinerea',                                                    '';
   'Cereb',  'FL',  	    'Flocculus',                                                           '';
@@ -96,7 +96,7 @@ areaLabels = { ...
   'BG',     'GPe',      'Globus pallidus, external segment',                                   '';
   'BS',     'GRN',      'Gigantocellular reticular nucleus',                                   '';
   'nCx',    'GU',       'Gustatory areas',                                                     'sensory';
-  'AA',     'HATA',  	  'Hippocampo-amygdalar transition area',                                '';
+  'AA',     'HATA',  	  'Hippocampo-amygdalar transition area',                                'association';
   'Th',     'IAD',      'Interanterodorsal nucleus of the thalamus',                           'association';
   'Th',     'IAM',      'Interanteromedial nucleus of the thalamus',                           'association';
   'MBr',    'IC',       'Inferior colliculus',                                                 '';
@@ -104,21 +104,21 @@ areaLabels = { ...
   'Th',     'IGL',      'Intergeniculate leaflet of the lateral geniculate complex',           'sensory';
   'nCx',    'ILA',      'Infralimbic area',                                                    'association';
   'Th',     'IMD',      'Intermediodorsal nucleus of the thalamus',                            'association';
-  'Th',     'IP',       'Interposed nucleus',                                                  'association';
+  'Cereb',  'IP',       'Interposed nucleus',                                                  '';
   'Cereb',  'IPN',      'Interpeduncular nucleus',                                             '';
   'BS',     'IRN',      'Intermediate reticular nucleus',                                      '';
   'BS',     'ISN',      'Inferior salivatory nucleus',                                         '';
-  'Th',     'IntG',     'Intermediate geniculate nucleus',                                     'association';
-  'AA',     'LA',       'Lateral amygdalar nucleus',                                           '';
+  'Th',     'IntG',     'Intermediate geniculate nucleus',                                     'sensory';
+  'AA',     'LA',       'Lateral amygdalar nucleus',                                           'association';
   'BS',     'LAV',      'Lateral vestibular nucleus',                                          '';
-  'BS',     'LC',       'Locus ceruleus',                                                      '';
+  'BS',     'LC',       'Locus coeruleus',                                                      '';
   'Th',     'LD',       'Lateral dorsal nucleus of thalamus',                                  'association';
   'BS',     'LDT',      'Laterodorsal tegmental nucleus',                                      '';
   'Th',     'LGd',      'Dorsal part of the lateral geniculate complex',                       'sensory';
   'Th',     'LGv',      'Ventral part of the lateral geniculate complex',                      'sensory';
   'EPT',    'LH',       'Lateral habenula',                                                    '';
   'Hyp',    'LHA',      'Lateral hypothalamic area',                                           '';
-  'nCx',    'LING',     'Lingula (I)',                                                         'association';
+  'Cereb',  'LING',     'Lingula (I)',                                                         '';
   'Th',     'LP',  	    'Lateral posterior nucleus of the thalamus',                           'association';
   'Hyp',    'LPO',      'Lateral preoptic area',                                               '';
   'BS',     'LRN',      'Lateral reticular nucleus',                                           '';
@@ -129,12 +129,12 @@ areaLabels = { ...
   'BS',     'MARN',     'Magnocellular reticular nucleus',                                     '';
   'Th',     'MD', 	    'Mediodorsal nucleus of thalamus',                                     'association';
   'BS',     'MDRN',     'Medullary reticular nucleus',                                         '';
-  'AA',     'MEA',      'Medial amygdalar nucleus',                                            '';
+  'AA',     'MEA',      'Medial amygdalar nucleus',                                            'association';
   'Th',     'MG',       'Medial geniculate complex',                                           'sensory';
   'EPT',    'MH',       'Medial habenula',                                                     '';
   'Hyp',    'MM',       'Medial mammillary nucleus',                                           '';
   'nCx',    'MOp',      'Primary motor area',                                                  'motor';
-  'nCx',    'MOs',      'Secondary motor area',                                                'association';
+  'nCx',    'MOs',      'Secondary motor area',                                                'motor';
   'Hyp',    'MPN',      'Medial preoptic nucleus',                                             '';
   'Hyp',    'MPO',      'Medial preoptic area',                                                '';
   'MBr',    'MPT',      'Medial pretectal area',                                               '';
@@ -154,7 +154,7 @@ areaLabels = { ...
   'nCx',    'ORBvl',    'Orbital area, ventrolateral part',                                    'association';
   'BG',     'OT',       'Olfactory tubercle',                                                  'sensory';
   'BS',     'P5',       'Peritrigeminal zone',                                                 '';
-  'AA',     'PA',       'Posterior amygdalar nucleus',                                         '';
+  'AA',     'PA',       'Posterior amygdalar nucleus',                                         'association';
   'MBr',    'PAG',      'Periaqueductal gray',                                                 '';
   'paCx',   'PAR',      'Parasubiculum',                                                       'association';
   'BS',     'PARN',     'Parvicellular reticular nucleus',                                     '';
@@ -171,17 +171,17 @@ areaLabels = { ...
   'BS',     'PG',       'Pontine gray',                                                        '';
   'BS',     'PGRN',     'Paragigantocellular reticular nucleus',                               '';
   'Hyp',    'PH',       'Posterior hypothalamic nucleus',                                      '';
-  'Th',     'PIL',      'Posterior intralaminar thalamic nucleus',                             'association';
+  'Th',     'PIL',      'Posterior intralaminar thalamic nucleus',                             'motor';
   'pCx',    'PIR',      'Piriform area',                                                       'sensory';
   'nCx',    'PL',       'Prelimbic area',                                                      'association';
   'Hyp',    'PMd',      'Dorsal premammillary nucleus',                                        '';
-  'Th',     'PO',  	    'Posterior complex of the thalamus',                                   'association';
+  'Th',     'PO',  	    'Posterior complex of the thalamus',                                   'sensory';
   'Th',     'POL',      'Posterior limiting nucleus of the thalamus',                          'association';
   'paCx',   'POST',  	  'Postsubiculum',                                                       'association';
   'BS',     'PP',       'Peripeduncular nucleus',                                              '';
   'BS',     'PPN',      'Pedunculopontine nucleus',                                            '';
   'MBr',    'PPT',      'Posterior pretectal nucleus',                                         '';
-  'Th',     'PR',       'Perireunensis nucleus',                                               'association';
+  'Th',     'PR',       'Perireunensis nucleus',                                               'motor';
   'paCx',   'PRE',      'Presubiculum',                                                        'association';
   'Cereb',  'PRM',      'Paramedian lobule',                                                   '';
   'BS',     'PRNc',     'Pontine reticular nucleus, caudal part',                              '';
@@ -220,7 +220,7 @@ areaLabels = { ...
   'MBr',    'SNr',      'Substantia nigra, reticular part',                                    '';
   'BS',     'SOC',      'Superior olivary complex',                                            '';
   'Th',     'SPA',      'Subparafascicular area',                                              'association';
-  'Th',     'SPF',      'Subparafascicular nucleus',                                           'motor';
+  'Th',     'SPF',      'Subparafascicular nucleus',                                           'association';
   'BS',     'SPIV',     'Spinal vestibular nucleus',                                           '';
   'BS',     'SPVC',     'Spinal nucleus of the trigeminal, caudal part',                       '';
   'BS',     'SPVI',     'Spinal nucleus of the trigeminal, interpolar part',                   '';
@@ -232,7 +232,7 @@ areaLabels = { ...
   'nCx',    'SSp-tr',   'Primary somatosensory area, trunk',                                   'sensory';
   'nCx',    'SSp-ul',   'Primary somatosensory area, upper limb',                              'sensory';
   'nCx',    'SSp-un',   'Primary somatosensory area, unassigned',                              'sensory';
-  'nCx',    'SSs',      'Supplemental somatosensory area',                                     'association';
+  'nCx',    'SSs',      'Supplemental somatosensory area',                                     'sensory';
   'STh',    'STN',      'Subthalamic nucleus',                                                 '';
   'paCx',   'SUB',      'Subiculum',                                                           'association';
   'Hyp',    'SUM',      'Supramammillary nucleus',                                             '';
@@ -251,16 +251,16 @@ areaLabels = { ...
   'BS',     'VCO',      'Ventral cochlear nucleus',                                            '';
   'BS',     'VII',      'Facial motor nucleus',                                                '';
   'nCx',    'VISC',     'Visceral area',                                                       'sensory';
-  'nCx',    'VISa',     'Anterior area',                                                       'association';
-  'nCx',    'VISam',    'Anteromedial visual area',                                            'association';
-  'nCx',    'VISl',     'Lateral visual area',                                                 'association';
-  'nCx',    'VISli',    'Laterointermediate area',                                             'association';
+  'nCx',    'VISa',     'Anterior area',                                                       'sensory';
+  'nCx',    'VISam',    'Anteromedial visual area',                                            'sensory';
+  'nCx',    'VISl',     'Lateral visual area',                                                 'sensory';
+  'nCx',    'VISli',    'Laterointermediate area',                                             'sensory';
   'nCx',    'VISp',     'Primary visual area',                                                 'sensory';
-  'nCx',    'VISpl',    'Posterolateral visual area',                                          'association';
-  'nCx',    'VISpm',    'posteromedial visual area',                                           'association';
-  'paCx',   'VISpor',   'Postrhinal area',                                                     'association';
-  'nCx',    'VISrl',    'Rostrolateral visual area',                                           'association';
-  'Th',     'VM',       'Ventral medial nucleus of the thalamus',                              'association';
+  'nCx',    'VISpl',    'Posterolateral visual area',                                          'sensory';
+  'nCx',    'VISpm',    'posteromedial visual area',                                           'sensory';
+  'paCx',   'VISpor',   'Postrhinal area',                                                     'sensory';
+  'nCx',    'VISrl',    'Rostrolateral visual area',                                           'sensory';
+  'Th',     'VM',       'Ventral medial nucleus of the thalamus',                              'motor';
   'Hyp',    'VMH',      'Ventromedial hypothalamic nucleus',                                   '';
   'Th',     'VPL',      'Ventral posterolateral nucleus of the thalamus',                      'sensory';
   'Th',     'VPLpc',    'Ventral posterolateral nucleus of the thalamus, parvicellular part',  'sensory';
@@ -276,28 +276,24 @@ areaLabels = { ...
   'BS',     'x',        'Nucleus x',                                                           ''};
 
 % Selected areas of interest
-areasOI = {'sensory'; 'association'; 'motor'; 'Th'; 'nCx'; 'paCx'; 'pCx'; ...
-  'Hp'; 'sensory-Th'; 'association-Th'; 'motor-Th'; 'sensory-nCx'; ...
+areasOI = {'sensory'; 'association'; 'motor'; 'Th'; 'nCx'; 'paCx'; ...
+  'pCx'; 'Hp'; 'sensory-Th'; 'association-Th'; 'motor-Th'; 'sensory-nCx'; ...
   'association-nCx'; 'motor-nCx'; 'association-paCx'; 'sensory-pCx'; ...
   'VPL-VPM'; 'LG'; 'PO'; 'LP'; 'VPL-VPM-LG-PO-LP'; 'SSp-bfd'; 'SSp-body'; ...
-  'SSp'; 'RSPagl'; 'RSPd'; 'RSPv'; 'RSPd-RSPv'; 'RSP'; 'VISp'; 'VIS'; ...
-  'CA1'; 'CA2'; 'CA3'; 'DG'; 'CA-DG'; 'AA'; 'BG'; 'Hyp'; 'MBr'; 'Cereb'; ...
-  'CLA'; 'BS'; 'EPT'; 'BF'; 'STh'};
-% areasOI = {'sensory'; 'association'; 'motor'; 'Th'; 'nCx'; 'paCx'; 'pCx'; ...
-%   'Hp'; 'sensory-Th'; 'association-Th'; 'motor-Th'; 'sensory-nCx'; ...
-%   'association-nCx'; 'motor-nCx'; 'VPL-VPM'; 'LG'; 'PO'; 'LP'; ...
-%   'VPL-VPM-LG-PO-LP'; 'SSp'; 'RSP'; 'VISp'; 'CA1'; 'CA2'; 'CA3'; 'DG'; ...
-%   'CA-DG'; 'AA'; 'BG'; 'Hyp'; 'MBr'; 'Cereb'; 'CLA'; 'BS'; 'BG'; 'EPT'; ...
-%   'BF'; 'STh'};
+  'SSp'; 'RSPagl'; 'RSPd'; 'RSPv'; 'RSPd-RSPv'; 'RSP'; 'VISp'; 'V2'; 'VIS'; ...
+  'CA1'; 'CA2'; 'CA3'; 'CA'; 'DG'; 'AA'; 'BG'; 'Hyp'; 'MBr'; 'Cereb'; ...
+  'CLA'; 'BS'; 'EPT'; 'BF'; 'STh'; 'association-motor'; ...
+  'association-motor-Th'; 'association-motor-nCx'};
 
 areasOI_full = {'sensory'; 'assoc'; 'motor'; 'Th'; 'neoCx'; 'perialloCx'; ...
   'paleoCx'; 'Hp'; 'sensory-Th'; 'assoc-Th'; 'motor-Th'; 'sensory-neoCx'; ...
   'assoc-neoCx'; 'motor-neoCx'; 'assoc-perialloCx'; 'sensory-paleoCx'; ...
   'VPL-VPM'; 'LG'; 'PO'; 'LP'; 'VPL-VPM-LG-PO-LP'; 'SSp-bfd'; 'SSp-body'; ...
-  'SSp'; 'RSPagl'; 'RSPd'; 'RSPv'; 'RSPd-RSPv'; 'RSP'; 'VISp'; 'VIS'; ...
-  'CA1'; 'CA2'; 'CA3'; 'DG'; 'CA-DG'; 'Amygdalar area'; 'Basal ganglia'; ...
+  'SSp'; 'RSPagl'; 'RSPd'; 'RSPv'; 'RSPd-RSPv'; 'RSC'; 'V1'; 'V2'; 'VIS'; ...
+  'CA1'; 'CA2'; 'CA3'; 'CA'; 'DG'; 'Amygdalar area'; 'Basal ganglia'; ...
   'Hypothalamus'; 'Midbrain'; 'Cerebellum'; 'Claustrum'; 'Brainstem'; ...
-  'EpiTh'; 'Basal forebrain'; 'SubTh'};
+  'EpiTh'; 'Basal forebrain'; 'SubTh'; 'assoc-motor'; 'assoc-motor-Th'; ...
+  'assoc-motor-neoCx'};
 
 % Minimal area set
 %areasMinimal = {'Th'; 'nCx'; 'VPL-VPM-LG-PO-LP'; 'SSp-bfd'; 'SSp-body'; ...

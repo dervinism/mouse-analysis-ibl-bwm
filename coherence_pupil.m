@@ -6,7 +6,7 @@
 % Load parameters
 addDependencies
 params
-parallelCores = 32;
+parallelCores = 1; %32;
 pupilPassbandFrequency = 1.5;
 pupilStopbandFrequency = 2;
 halfCoherence = false;
@@ -58,25 +58,25 @@ for iArea = resumeInd:nAreas
       expData = infraslowData.experimentData{recID};
 
       % Get all unit spike counts
-      unitInds = ismember(expData.unitBrainAreas, areaAcronymInit);
+      unitMask = ismember(expData.unitBrainAreas, areaAcronymInit);
       expPupilCorrDataP = infraslowAnalyses.spikingPupilCorr.recordings.pvalSpearman{recID};
+      expPupilCorrDataR = infraslowAnalyses.spikingPupilCorr.recordings.rSpearman{recID};
       if strcmpi(population, 'positive') || strcmpi(population, 'negative')
-        expPupilCorrDataR = infraslowAnalyses.spikingPupilCorr.recordings.rSpearman{recID};
         if ~isempty(expPupilCorrDataR) && any(~isnan(expPupilCorrDataR))
           if strcmpi(population, 'positive')
-            unitInds = unitInds & expPupilCorrDataR > 0;
+            unitMask = unitMask & expPupilCorrDataR > 0;
           elseif strcmpi(population, 'negative')
-            unitInds = unitInds & expPupilCorrDataR < 0;
+            unitMask = unitMask & expPupilCorrDataR < 0;
           end
         else
           continue
         end
       end
       if significantOnly
-        unitInds = unitInds & expPupilCorrDataP < alpha;
+        unitMask = unitMask & expPupilCorrDataP < alpha;
       end
-      if any(unitInds)
-        spikeCounts = expData.spikeCounts(unitInds,:);
+      if any(unitMask)
+        spikeCounts = expData.spikeCounts(unitMask,:);
         spikeTimeBins = expData.spikeTimeBins;
         effectiveSR = 1/mean(diff(spikeTimeBins));
         if excludeMovement
@@ -93,6 +93,7 @@ for iArea = resumeInd:nAreas
         elseif ~isempty(expData.rightPupilAreaSize)
           pupilAreaSize = expData.rightPupilAreaSize;
         else
+          spikingPupilCoh.(areaAcronym){iRec}.unitMask = unitMask;
           spikingPupilCoh.(areaAcronym){iRec}.experimentIndex = recID;
           spikingPupilCoh.(areaAcronym){iRec}.timeOfCompletion = datetime;
           continue
@@ -117,6 +118,7 @@ for iArea = resumeInd:nAreas
         % Exclude periods with no values
         nanInds = isnan(pupilAreaSizeFilt);
         if sum(nanInds) == numel(pupilAreaSizeFilt)
+          spikingPupilCoh.(areaAcronym){iRec}.unitMask = unitMask;
           spikingPupilCoh.(areaAcronym){iRec}.experimentIndex = recID;
           spikingPupilCoh.(areaAcronym){iRec}.timeOfCompletion = datetime;
           continue
@@ -149,6 +151,13 @@ for iArea = resumeInd:nAreas
         %    freqfactor=freqfactor, tapers=tapers, halfCoherence=halfCoherence, ...
         %    parallelise=parallelise);
         %end
+        if strcmpi(population, 'all')
+          spikingPupilCoh.(areaAcronym){iRec}.rSpearman = expPupilCorrDataR(unitMask);
+          spikingPupilCoh.(areaAcronym){iRec}.pvalSpearman = expPupilCorrDataP(unitMask);
+        end
+        spikingPupilCoh.(areaAcronym){iRec}.spikeCounts = full(sum(spikeCounts,2));
+        spikingPupilCoh.(areaAcronym){iRec}.firingRates = full(mean(spikeCounts,2)*sr);
+        spikingPupilCoh.(areaAcronym){iRec}.unitMask = unitMask;
         spikingPupilCoh.(areaAcronym){iRec}.experimentIndex = recID;
         spikingPupilCoh.(areaAcronym){iRec}.timeOfCompletion = datetime;
       end

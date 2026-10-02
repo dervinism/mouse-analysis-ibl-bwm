@@ -1,5 +1,5 @@
 % Script for producing figures showing distributions of preferred unit
-% firing phase wrt the pupila area size. The script can only be executed on
+% firing phase wrt the pupil area size. The script can only be executed on
 % Matlab version R2021a or higher due to the use of functions with
 % keyword-value argument pairs.
 
@@ -108,27 +108,58 @@ if allAreaHistos
 end
 
 if oldAreaHistos
-  options = struct();
-  options.mainFolder = figFolder;
-  options.histosSubfolder = 'phaseHistos';
-  options.mapsSubfolder = 'phaseMaps';
-  options.figSize = 15;
-  options.figTitle = 'PUPIL';
-  options.freqLim = [10e-3 2];
-  phaseShift = 0; %pi/2;
-  options.phaseLimHisto = phaseLim + phaseShift;
-  options.phaseLimMap = phaseLim - phaseShift;
-  options.xLabelHist = '# units';
-  options.limExpansion = pi/4; %pi/2;
-  % options.mask = {[options.freqLim(1) options.phaseLimMap(end)+options.limExpansion; 2 options.phaseLimMap(end)+options.limExpansion;...
-  %   options.freqLim(1) pi/2; 2 options.phaseLimMap(end)+options.limExpansion];...
-  %   [0.05 options.phaseLimMap(1)-options.limExpansion; options.freqLim(end) -pi/2;...
-  %   0.05 options.phaseLimMap(1)-options.limExpansion; options.freqLim(end) options.phaseLimMap(1)-options.limExpansion]};
-  options.mask = {};
-  options.iAreasOI = 35; %1:numel(areasOI);
-  [phaseHistos, distributionStats] = phaseHistosPlotMaster([true false false], ...
-    areasOI, {'awake'}, FOI, {areaOIPhase}, edges+phaseShift, options); %#ok<*ASGLU>
+  % % Histograms
+  % options = struct();
+  % options.mainFolder = figFolder;
+  % options.histosSubfolder = 'phaseHistos';
+  % options.mapsSubfolder = 'phaseMaps';
+  % options.figSize = 15;
+  % options.figTitle = 'PUPIL';
+  % options.freqLim = [10e-3 2];
+  % phaseShift = 0; %pi/2;
+  % options.phaseLimHisto = phaseLim + phaseShift;
+  % options.phaseLimMap = phaseLim - phaseShift;
+  % options.xLabelHist = '# units';
+  % options.limExpansion = pi/4; %pi/2;
+  % % options.mask = {[options.freqLim(1) options.phaseLimMap(end)+options.limExpansion; 2 options.phaseLimMap(end)+options.limExpansion;...
+  % %   options.freqLim(1) pi/2; 2 options.phaseLimMap(end)+options.limExpansion];...
+  % %   [0.05 options.phaseLimMap(1)-options.limExpansion; options.freqLim(end) -pi/2;...
+  % %   0.05 options.phaseLimMap(1)-options.limExpansion; options.freqLim(end) options.phaseLimMap(1)-options.limExpansion]};
+  % options.mask = {};
+  % options.iAreasOI = 8; %1:numel(areasOI);
+  % [phaseHistos, distributionStats] = phaseHistosPlotMaster([true false false], ...
+  %   areasOI, {'awake'}, FOI, {areaOIPhase}, edges+phaseShift, options); %#ok<*ASGLU>
 
+  % Unit profiles
+  figFileName = '%s_%s_%s_%s_phase';
+  options = struct();
+  options.figTitle = 'Population rate phase comparisons: %s %s %s %s';
+  options.figSize = 15;
+  options.mainFolder = figFolder;
+  options.phaseFrequencyProfilesSubfolder = 'unitPhaseProfiles';
+  options.freqLim = [10e-3 2];
+  options.phaseLim = phaseLim + phaseShift;
+  options.cutoffFreq = 2;
+  options.iAreasOI = 37;
+  nAreas = size(areaLabels,1);
+  spikingPupilCoh = cell(nAreas,1);
+  recordings = cell(nAreas,1);
+  for iArea = 1:nAreas
+    try
+      spikingPupilCoh{iArea} = infraslowAnalyses.spikingPupilCoh.(...
+        strrep(strrep(areaLabels{iArea,2}, ' ', '_'), '-', '_'));
+      if ~isempty(spikingPupilCoh{iArea})
+        recordings{iArea} = 1:numel(spikingPupilCoh{iArea});
+      end
+    catch
+      % do nothing
+    end
+  end
+  freq = spikingPupilCoh{options.iAreasOI(1)}{1}.fullInterpCoherence.frequency(1,:);
+  phaseFreqProfilePlotIndividual(areasOI, {'awake'}, freq, ...
+    {spikingPupilCoh}, [], recordings, figFileName, options);
+
+  % Maps
   options = struct();
   options.mainFolder = figFolder;
   options.histosSubfolder = 'phaseHistos';
