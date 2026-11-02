@@ -6,15 +6,21 @@
 % Load parameters
 addDependencies
 params
-parallelCores = 1; %32;
+if ~exist('parallelCores', 'var') || isempty(parallelCores)
+  parallelCores = 1; %32;
+end
 pupilPassbandFrequency = 1.5;
 pupilStopbandFrequency = 2;
 halfCoherence = false;
-population = 'all'; %'all', 'positive', 'negative'
+if ~exist('population', 'var') || isempty(population)
+  population = 'all'; %'all', 'positive', 'negative'
+end
 excludeMovement = false;
 significantOnly = false;
 alpha = 0.05;
-resumeInd = 1;
+if ~exist('resumeInd', 'var') || isempty(resumeInd)
+  resumeInd = 1;
+end
 
 % Load preprocessed data
 if ~exist('infraslowData', 'var')
@@ -24,7 +30,7 @@ end
 
 % Load data analysis results
 if ~exist('infraslowAnalyses', 'var')
-  analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
+  analysisResultsFile = fullfile(processedDataFolder, ['bwmAnalysisResults' resultsTag '.mat']);
   load(analysisResultsFile);
 end
 
@@ -59,6 +65,9 @@ for iArea = resumeInd:nAreas
 
       % Get all unit spike counts
       unitMask = ismember(expData.unitBrainAreas, areaAcronymInit);
+      if qualityFilter
+        unitMask = unitMask & reshape(expData.goodUnits, size(unitMask));
+      end
       expPupilCorrDataP = infraslowAnalyses.spikingPupilCorr.recordings.pvalSpearman{recID};
       expPupilCorrDataR = infraslowAnalyses.spikingPupilCorr.recordings.rSpearman{recID};
       if strcmpi(population, 'positive') || strcmpi(population, 'negative')
@@ -208,7 +217,7 @@ for iArea = resumeInd:nAreas
         end
       end
     end
-    save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');
+    saveAnalysisResults(analysisResultsFile, infraslowAnalyses);
   end
 end
 

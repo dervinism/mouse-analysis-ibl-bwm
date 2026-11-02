@@ -12,7 +12,7 @@ direction = 'forward'; %'forward', 'backward'
 
 % Load data analysis results
 if ~exist('infraslowAnalyses', 'var')
-  analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
+  analysisResultsFile = fullfile(processedDataFolder, ['bwmAnalysisResults' resultsTag '.mat']);
   load(analysisResultsFile); 
 end
 

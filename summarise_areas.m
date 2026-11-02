@@ -37,8 +37,16 @@ for iExp = 1:nExp
   end
 end
 
-% Sum units
-uniqueBrainAreas = unique(brainAreas);
+% Sum units in the order of the area list in params.m (areaLabels), matching
+% areas by acronym, so that row i of the area table always corresponds to
+% row i of areaLabels. Recorded areas missing from areaLabels have to be
+% added to params.m (with their group and functional type) first.
+missingAreas = setdiff(unique(brainAreas), areaLabels(:,2));
+if ~isempty(missingAreas)
+  error('Recorded brain areas missing from areaLabels in params.m: %s', ...
+    strjoin(missingAreas, ', '));
+end
+uniqueBrainAreas = areaLabels(:,2);
 nAreas = numel(uniqueBrainAreas);
 unitCountSum = zeros(nAreas,2);
 groupedUnitInds = cell(nAreas,1);
@@ -77,11 +85,19 @@ areaTable = table(areaLabels(:,1), uniqueBrainAreas, fullAreaNames, areaLabels(:
   'VariableNames', {'Brain_area_group', 'Brain_area_acronym', 'Brain_area_name', 'Brain_area_type', 'Total_unit_count', 'Good_unit_count'});
 
 % Save area table and unit indices
-analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
+analysisResultsFile = fullfile(processedDataFolder, ['bwmAnalysisResults' resultsTag '.mat']);
 if exist(analysisResultsFile, 'file')
   load(analysisResultsFile);
 end
 infraslowAnalyses.areaSummaries.areaTable = areaTable;
-infraslowAnalyses.areaSummaries.groupedUnitInds = groupedUnitInds;
+% groupedUnitInds are the units analysed downstream: all clusters, or only
+% the units passing IBL quality control when qualityFilter is on
+if qualityFilter
+  infraslowAnalyses.areaSummaries.groupedUnitInds = groupedGoodUnitInds;
+else
+  infraslowAnalyses.areaSummaries.groupedUnitInds = groupedUnitInds;
+end
+infraslowAnalyses.areaSummaries.groupedAllUnitInds = groupedUnitInds;
 infraslowAnalyses.areaSummaries.groupedGoodUnitInds = groupedGoodUnitInds;
-save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');
+infraslowAnalyses.areaSummaries.qualityFilter = qualityFilter;
+saveAnalysisResults(analysisResultsFile, infraslowAnalyses);

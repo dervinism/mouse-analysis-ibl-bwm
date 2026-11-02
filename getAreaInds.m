@@ -18,7 +18,7 @@ function areaInds = getAreaInds(areaOI, areaTable)
 %     infraslowAnalyses.areaSummaries.areaTable.
 %
 % Returns:
-%   areaInds (logical): a shape-(244, 1) logical array of sub-area indices
+%   areaInds (logical): a shape-(M, 1) logical array of sub-area indices
 %     comprising the area of interest.
 %
 % Authors:
@@ -26,7 +26,7 @@ function areaInds = getAreaInds(areaOI, areaTable)
 
 arguments
   areaOI (1,:) %{mustBeVector,mustBeText}
-  areaTable (244,6) %{mustBeA(areaTable,'table')}
+  areaTable (:,6) %{mustBeA(areaTable,'table')}
 end
 
 if ismember(areaOI, areaTable.Brain_area_type)
@@ -54,6 +54,9 @@ elseif strcmpi(areaOI, 'motor-nCx')
 elseif strcmpi(areaOI, 'association-paCx')
   areaInds = ismember(areaTable.Brain_area_type, 'association') & ...
     ismember(areaTable.Brain_area_group, 'paCx');
+elseif strcmpi(areaOI, 'association-piCx')
+  areaInds = ismember(areaTable.Brain_area_type, 'association') & ...
+    ismember(areaTable.Brain_area_group, 'piCx');
 elseif strcmpi(areaOI, 'sensory-pCx')
   areaInds = ismember(areaTable.Brain_area_type, 'sensory') & ...
     ismember(areaTable.Brain_area_group, 'pCx');
@@ -63,6 +66,7 @@ elseif strcmpi(areaOI, 'association-pCx')
 elseif strcmpi(areaOI, 'Cx')
   areaInds = ismember(areaTable.Brain_area_group, 'nCx') | ...
     ismember(areaTable.Brain_area_group, 'paCx') | ...
+    ismember(areaTable.Brain_area_group, 'piCx') | ...
     ismember(areaTable.Brain_area_group, 'pCx');
 elseif strcmpi(areaOI, 'association-motor')
   areaInds = ismember(areaTable.Brain_area_type, 'association') | ...

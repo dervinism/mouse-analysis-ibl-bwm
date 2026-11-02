@@ -4,6 +4,11 @@
 dependencies/
 figures/
 .vscode/
+
+# Generated outputs: figures of the quality-filtered variant, result tables (tables/*.csv, *.txt) and run logs
+figures_qc/
+tables/
+*.log
 *.asv
 *.mat
 

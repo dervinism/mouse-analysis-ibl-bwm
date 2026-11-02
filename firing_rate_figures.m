@@ -19,7 +19,7 @@ end
 
 % Load data analysis results
 if ~exist('infraslowAnalyses', 'var')
-  analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
+  analysisResultsFile = fullfile(processedDataFolder, ['bwmAnalysisResults' resultsTag '.mat']);
   load(analysisResultsFile);
 end
 
@@ -235,17 +235,17 @@ for iArea = 1:nAreas
     ['p=' num2str(round(statsVar.p,digit,'significant'))], 'FontSize',20);
 
   % Save the figure
-  figFolder = './figures/firing_rate_distros';
-  if ~isfolder(figFolder)
-    mkdir(figFolder);
+  distroFolder = fullfile(figFolder, 'firing_rate_distros');
+  if ~isfolder(distroFolder)
+    mkdir(distroFolder);
   end
   label = [3.9 3.1];
   margin = [0.6 0.55];
   width = options.figSize-label(1)-margin(1);
   height = options.figSize-label(2)-margin(2);
   paperSize = resizeFig(options.fH, gca, width, height, label, margin, 0);
-  hgsave(options.fH, [figFolder filesep options.figName '.fig']);
-  exportFig(options.fH, [figFolder filesep options.figName '.png'],'-dpng','-r300', paperSize);
+  hgsave(options.fH, [distroFolder filesep options.figName '.fig']);
+  exportFig(options.fH, [distroFolder filesep options.figName '.png'],'-dpng','-r300', paperSize);
   close(options.fH);
 
   % Draw split +/- data distributions
@@ -253,7 +253,7 @@ for iArea = 1:nAreas
   options.xLim = [-3 1.5];
   options.xLabel = 'Log_{10}(firing rate)';
   options.yLabel = 'Unit count';
-  options.figFolder = figFolder;
+  options.figFolder = distroFolder;
   options.figSize = 18;
   options.pdf = false;
   options.colours = [matlabColours(1); matlabColours(2); matlabColours(1); matlabColours(2)];
@@ -274,8 +274,8 @@ for iArea = 1:nAreas
   width = options.figSize-label(1)-margin(1);
   height = options.figSize-label(2)-margin(2);
   paperSize = resizeFig(fH, gca, width, height, label, margin, 0);
-  hgsave(fH, [figFolder filesep options.figName '.fig']);
-  exportFig(fH, [figFolder filesep options.figName '.png'],'-dpng','-r300', paperSize);
+  hgsave(fH, [distroFolder filesep options.figName '.fig']);
+  exportFig(fH, [distroFolder filesep options.figName '.png'],'-dpng','-r300', paperSize);
   close(fH);
 end
 
@@ -320,7 +320,7 @@ incMask = [false false false false false true true false true true true ...
   true true true false false false false false false false false false ...
   false false false false false false false false false false false false ...
   true true true true true true true true true true true true false false ...
-  false];
+  false true false];
 positiveSpearmanFractionsMeans = ...
   infraslowAnalyses.spikingPupilCorr.areasOI.positiveSpearmanFractionsMeans(:,1);
 if includeExtraData
@@ -340,7 +340,7 @@ areaOrderOI = areaOrderOI(~isnan(sortedAreasOI));
 
 %includeAreaInds = [1:14 17:21 24 29:numel(incMask)];
 %includeAreaInds = [1:14 17:18, 24 29:32 36:numel(incMask)];
-includeAreaInds = [1:14 17:18, 24 29:32 36:47 51:numel(incMask)];
+includeAreaInds = [1:14 17:18, 24 29:32 36:47 51 53:numel(incMask)];
 nAreas = numel(areaOrderOI);
 fontSize = 18;
 fH = figure;
@@ -385,8 +385,8 @@ end
 plot([0.5 lineCount+0.5], [0 0], ':');
 hold off
 xticks(1:lineCount);
-areasOI_full{54} = 'Hp UoL';
-areasOI_full{60} = 'Hp Allen';
+areasOI_full{56} = 'Hp UoL';
+areasOI_full{62} = 'Hp Allen';
 xticklabels(areasOI_full(areaOrderOI(ismember(areaOrderOI, includeAreaInds))));
 xtickangle(45)
 ylabel('Log_{10}(Firing rate) change')

@@ -21,7 +21,7 @@ end
 
 % Load data analysis results
 if ~exist('infraslowAnalyses', 'var')
-  analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
+  analysisResultsFile = fullfile(processedDataFolder, ['bwmAnalysisResults' resultsTag '.mat']);
   load(analysisResultsFile);
 end
 
@@ -306,7 +306,9 @@ disp(spikingPupilCorr.areasOI.fractionTable);
 % Perform stats
 fractionsPerRec = cell(size(spikingPupilCorr.areasOI.positiveSpearmanFractionsPerRec));
 for iArea = 1:nAreas
-  fractionsPerRec{iArea} = spikingPupilCorr.areasOI.positiveSpearmanFractionsPerRec{iArea}(:,1);
+  if ~isempty(spikingPupilCorr.areasOI.positiveSpearmanFractionsPerRec{iArea}) % areas without recordings (possible with the quality filter) stay empty
+    fractionsPerRec{iArea} = spikingPupilCorr.areasOI.positiveSpearmanFractionsPerRec{iArea}(:,1);
+  end
 end
 %spikingPupilCorr.areasOI.stats = meanTest2(fractionsPerRec(areaOrderOI), 'ranksum');
 spikingPupilCorr.areasOI.stats = meanTest2(fractionsPerRec(areaOrderOI), 'ttest');
@@ -322,7 +324,7 @@ if excludeMovement
 else
   infraslowAnalyses.spikingPupilCorr = spikingPupilCorr;
 end
-save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');
+saveAnalysisResults(analysisResultsFile, infraslowAnalyses);
 
 % Display area positive fraction violins or lines
 if strcmpi(violinOrLines, 'violin')
@@ -375,7 +377,7 @@ elseif strcmpi(violinOrLines, 'lines')
   fontSize = 18;
   fH = figure;
   if groupAreas
-    includeAreaInds = [1:14 17:18, 24 29:32 36:47];
+    includeAreaInds = [1:14 17:18, 24 29:32 36:47 51];
     nAreas = numel(areaOrderOI);
     lineCount = 0;
     meanAggregate = [];
@@ -384,7 +386,7 @@ elseif strcmpi(violinOrLines, 'lines')
       if ~isempty(areaData) && ismember(areaOrderOI(iArea), includeAreaInds)
         [posFractionMean, posFractionCI95] = datamean(areaData);
         if ismember(areasOI{areaOrderOI(iArea)}, ...
-            {'Th'; 'nCx'; 'paCx'; 'pCx'; 'Hp'; 'AA'; 'BG'; 'Hyp'; 'MBr'; ...
+            {'Th'; 'nCx'; 'paCx'; 'piCx'; 'pCx'; 'Hp'; 'AA'; 'BG'; 'Hyp'; 'MBr'; ...
             'Cereb'; 'CLA'; 'BS'; 'BG'; 'EPT'; 'BF'; 'STh'})
           meanAggregate = [meanAggregate; posFractionMean];
         end

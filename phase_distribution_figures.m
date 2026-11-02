@@ -11,7 +11,7 @@ allAreaHistos = false;
 oldAreaHistos = true;
 
 % Load data analysis results
-analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
+analysisResultsFile = fullfile(processedDataFolder, ['bwmAnalysisResults' resultsTag '.mat']);
 if ~exist('infraslowAnalyses', 'var') && exist(analysisResultsFile, 'file')
   load(analysisResultsFile);
 elseif ~exist('infraslowAnalyses', 'var')
@@ -138,6 +138,7 @@ if oldAreaHistos
   options.mainFolder = figFolder;
   options.phaseFrequencyProfilesSubfolder = 'unitPhaseProfiles';
   options.freqLim = [10e-3 2];
+  phaseShift = 0; %pi/2; display window offset only (its definition was lost when the histogram block above was commented out)
   options.phaseLim = phaseLim + phaseShift;
   options.cutoffFreq = 2;
   options.iAreasOI = 37;

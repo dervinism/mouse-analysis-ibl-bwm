@@ -21,7 +21,7 @@ end
 
 % Load data analysis results
 if ~exist('infraslowAnalyses', 'var')
-  analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
+  analysisResultsFile = fullfile(processedDataFolder, ['bwmAnalysisResults' resultsTag '.mat']);
   load(analysisResultsFile);
 end
 
@@ -39,33 +39,21 @@ for iComp = 1:nComps
   for iArea = 1:numel(areaInds)
     if strcmpi(population, 'all')
       if significantOnly
-        structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCohSignificant); %#ok<*UNRCH>
-        ind = min([numel(structFieldNames) areaInds(iArea)]);
-        compData = [compData, infraslowAnalyses.spikingPupilCohSignificant.(structFieldNames{ind})];
+        compData = [compData, getAreaCohData(infraslowAnalyses.spikingPupilCohSignificant, infraslowAnalyses.areaSummaries.areaTable, areaInds(iArea))];
       else
-        structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCoh);
-        ind = min([numel(structFieldNames) areaInds(iArea)]);
-        compData = [compData, infraslowAnalyses.spikingPupilCoh.(structFieldNames{ind})];
+        compData = [compData, getAreaCohData(infraslowAnalyses.spikingPupilCoh, infraslowAnalyses.areaSummaries.areaTable, areaInds(iArea))];
       end
     elseif strcmpi(population, 'positive')
       if significantOnly
-        structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCohPositiveSignificant);
-        ind = min([numel(structFieldNames) areaInds(iArea)]);
-        compData = [compData, infraslowAnalyses.spikingPupilCohPositiveSignificant.(structFieldNames{ind})];
+        compData = [compData, getAreaCohData(infraslowAnalyses.spikingPupilCohPositiveSignificant, infraslowAnalyses.areaSummaries.areaTable, areaInds(iArea))];
       else
-        structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCohPositive);
-        ind = min([numel(structFieldNames) areaInds(iArea)]);
-        compData = [compData, infraslowAnalyses.spikingPupilCohPositive.(structFieldNames{ind})];
+        compData = [compData, getAreaCohData(infraslowAnalyses.spikingPupilCohPositive, infraslowAnalyses.areaSummaries.areaTable, areaInds(iArea))];
       end
     elseif strcmpi(population, 'negative')
       if significantOnly
-        structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCohNegativeSignificant);
-        ind = min([numel(structFieldNames) areaInds(iArea)]);
-        compData = [compData, infraslowAnalyses.spikingPupilCohNegativeSignificant.(structFieldNames{ind})];
+        compData = [compData, getAreaCohData(infraslowAnalyses.spikingPupilCohNegativeSignificant, infraslowAnalyses.areaSummaries.areaTable, areaInds(iArea))];
       else
-        structFieldNames = fieldnames(infraslowAnalyses.spikingPupilCohNegative);
-        ind = min([numel(structFieldNames) areaInds(iArea)]);
-        compData = [compData, infraslowAnalyses.spikingPupilCohNegative.(structFieldNames{ind})];
+        compData = [compData, getAreaCohData(infraslowAnalyses.spikingPupilCohNegative, infraslowAnalyses.areaSummaries.areaTable, areaInds(iArea))];
       end
     end
   end

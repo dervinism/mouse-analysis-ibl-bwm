@@ -30,7 +30,7 @@ for iExp = 1:nExperiments
   % Convert electrophysiology data
   probe0Data = extractEphysData(dataStruct.experiment_data{iExp}.probe0, ...
     dataStruct.experiment_data{iExp}.spontaneous_activity_times, samplingRate, binSpikes);
-  probe1Data = extractEphysData(dataStruct.experiment_data{iExp}.probe0, ...
+  probe1Data = extractEphysData(dataStruct.experiment_data{iExp}.probe1, ...
     dataStruct.experiment_data{iExp}.spontaneous_activity_times, samplingRate, binSpikes);
   if ~isempty(probe0Data) && isempty(probe1Data)
     expData = probe0Data;
@@ -58,6 +58,8 @@ for iExp = 1:nExperiments
     expData = struct();
   end
   if ~isempty(expData) && ~isempty(fieldnames(expData))
+    assert(numel(unique(string(expData.unitUIDs))) == numel(expData.unitUIDs), ...
+      'Duplicated units in experiment %i', iExp);
     expData.goodUnits = ismember(expData.unitUIDs, dataStruct.unitTable.uuids);
     expData.samplingRate = samplingRate;
   end

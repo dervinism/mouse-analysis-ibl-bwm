@@ -22,7 +22,7 @@ end
 
 % Load data analysis results
 if ~exist('infraslowAnalyses', 'var')
-  analysisResultsFile = fullfile(processedDataFolder, 'bwmAnalysisResults.mat');
+  analysisResultsFile = fullfile(processedDataFolder, ['bwmAnalysisResults' resultsTag '.mat']);
   load(analysisResultsFile);
 end
 
@@ -228,7 +228,7 @@ for iUnitArea = resumeInd:nAreas
       end
     end
   end
-  save(analysisResultsFile, 'infraslowAnalyses', '-v7.3');
+  saveAnalysisResults(analysisResultsFile, infraslowAnalyses);
 end
 
 % Switch on warnings
