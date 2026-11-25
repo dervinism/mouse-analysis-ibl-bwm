@@ -70,6 +70,7 @@ for iPop = 1:size(populations,1)
       [p, wwTable] = circ_wwtest(phase{1}, phase{2});
       test = 'WW';
       stat = wwTable{2,5}; df1 = wwTable{2,2}; df2 = wwTable{3,2};
+      p = fcdf(stat, df1, df2, 'upper');   % 2026-11-08: circ_wwtest's 1 - fcdf underflows to 0 for large F
     end
     rows(end+1,:) = {comparisons{iComp,1}, comparisons{iComp,2}, populations{iPop,1}, n(1), n(2), ...
       mu(1), mu(2), med(1), med(2), test, stat, df1, df2, p, rw}; %#ok<AGROW>
@@ -80,7 +81,11 @@ T = cell2table(rows, 'VariableNames', {'group1', 'group2', 'population', 'n1', '
 if ~isfolder('tables')
   mkdir('tables');
 end
-writetable(T, fullfile('tables', sprintf('phase_ordering_stats_qc%d.csv', qualityFilter)));
+if abs(freqOI - 0.3) < 1e-9
+  writetable(T, fullfile('tables', sprintf('phase_ordering_stats_qc%d.csv', qualityFilter)));
+else   % other frequencies alongside, never over the 0.3 Hz table that manuscript_figures.m reads
+  writetable(T, fullfile('tables', sprintf('phase_ordering_stats_qc%d_%sHz.csv', qualityFilter, strrep(num2str(freqOI), '.', 'p'))));
+end
 disp(T);
 end
 

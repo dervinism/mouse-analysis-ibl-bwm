@@ -62,14 +62,21 @@ end
 tests = {'Th', {'Th'}, 'nCx', {'nCx'}; 'nCx', {'nCx'}, 'Hp', {'Hp'}; ...
   'sensory', {'sensory'}, 'motor + association', {'motor', 'association'}; ...
   'motor', {'motor'}, 'association', {'association'}};
-say(fid, '\nt-tests (recordings as units, pooled variance)\n');
+say(fid, '\nt-tests (recordings as units, pooled variance); pHolm = Holm-Bonferroni across these %d tests\n', size(tests,1));
+pRaw = nan(size(tests,1), 1);
+for i = 1:size(tests,1)
+  a = cell2mat(cellfun(perRec, tests{i,2}, 'UniformOutput', false)');
+  b = cell2mat(cellfun(perRec, tests{i,4}, 'UniformOutput', false)');
+  [~, pRaw(i)] = ttest2(a, b);
+end
+[~, o] = sort(pRaw); m = numel(pRaw); pHolm = nan(m, 1); pHolm(o) = min(1, cummax((m:-1:1)' .* pRaw(o)));
 for i = 1:size(tests,1)
   a = cell2mat(cellfun(perRec, tests{i,2}, 'UniformOutput', false)');
   b = cell2mat(cellfun(perRec, tests{i,4}, 'UniformOutput', false)');
   [~, p, ~, st] = ttest2(a, b);
-  say(fid, '  %s vs %s: %.3f±%.3f (n %d) vs %.3f±%.3f (n %d), t(%d) = %.2f, p = %.2g\n', tests{i,1}, tests{i,3}, ...
+  say(fid, '  %s vs %s: %.3f±%.3f (n %d) vs %.3f±%.3f (n %d), t(%d) = %.2f, p = %.2g, pHolm = %.2g\n', tests{i,1}, tests{i,3}, ...
     mean(a), tinv(0.975, numel(a)-1)*std(a)/sqrt(numel(a)), numel(a), mean(b), ...
-    tinv(0.975, numel(b)-1)*std(b)/sqrt(numel(b)), numel(b), st.df, st.tstat, p);
+    tinv(0.975, numel(b)-1)*std(b)/sqrt(numel(b)), numel(b), st.df, st.tstat, p, pHolm(i));
 end
 
 %% Fig. 8D-F: phase vs positive fraction (phase_profiles_pupil.m)
@@ -122,12 +129,9 @@ for iArea = 1:nAreas
     counts = expData.spikeCounts(areaInds(unitMask,2),:);
     dur = size(counts,2) / expData.samplingRate;
     rate = sum(counts,2) / dur; active = rate > firingRateThr;
-    pv = prctile(pupil, [12.5 87.5]);
-    lo = zeros(sum(unitMask),1); hi = lo;
-    lo(active) = sum(counts(active, pupil <= pv(1)), 2) / dur;   % whole-session duration, as in the figure script
-    hi(active) = sum(counts(active, pupil > pv(2)), 2) / dur;
-    lo(~lo) = nan; hi(~hi) = nan;
-    fr(unitMask,:) = [log10(lo) log10(hi)];
+    [~, lr] = stateRates(counts, pupil, expData.samplingRate, 12.5);   % time-in-state denominator, zero -> -3 (as UoL/Allen)
+    lr = reshape(lr, [], 2); lr(~active,:) = nan;
+    fr(unitMask,:) = lr;
   end
   firingRates{iArea} = fr;
 end
@@ -143,37 +147,50 @@ say(fid, '  SD constricted %.2f, dilated %.2f\n', std(logRates(:,1), 'omitnan'),
 say(fid, '  meanTest ANOVARM: %s\n', strtrim(evalc('disp(sM)')));
 say(fid, '  varTest (Levene quadratic): %s\n', strtrim(evalc('disp(sV)')));
 
+% Median-based statistics (2026-11-08): medians, IQR, paired Wilcoxon signed-rank, Brown-Forsythe
+load(fullfile(processedDataFolder, 'uolAllen_fig5.mat'), 'uolAllenFig5');
+ua = @(lbl) uolAllenFig5(strcmp({uolAllenFig5.label}, lbl));
+say(fid, '\nFig. 5 median statistics (log10 rate, silent in a state = -3; constricted vs dilated)\n');
+fig5med(fid, 'IBL DG', logRates);
+fig5med(fid, 'UoL Th', ua('Th UoL').logRates);
+fig5med(fid, 'Allen Th', ua('Th Allen').logRates);
+fig5med(fid, 'Allen VIS (Cx)', ua('Cx Allen').logRates);
+
 incMask5 = [false false false false false true true false true true true ...
   true true true false false false false false false false false false ...
   false false false false false false false false false false false false ...
   true true true true true true true true true true true true false false ...
   false true false];
-uolChange = [0.145666 - 0.298024; 0.341518 - 0.259733; 0.289202 - 0.458551; 0.249652 - 0.424188; ...
-  0.434660 - 0.418259; 0.300893 - 0.190590; 0.770454 - 0.415658];
-uolFrac = [0.475467; 0.674299; 0.400523; 0.461996; 0.607605; 0.69995; 0.874251];
+uolLbl = {'CA UoL', 'neoCx UoL', 'DG UoL', 'CA-DG UoL', 'RSP UoL', 'S1 UoL', 'Th UoL'};
+allenLbl = {'CA Allen', 'DG Allen', 'CA-DG Allen', 'Th Allen', 'V1 Allen', 'V2 Allen', 'Cx Allen'};
+medChange = @(L) median(L(:,2), 'omitnan') - median(L(:,1), 'omitnan');
+uolChange = cellfun(@(l) medChange(ua(l).logRates), uolLbl)';
+uolFrac = cellfun(@(l) ua(l).positiveFractionTable, uolLbl)';
 uolInc = [true false true false true true true];
-allenChange = [0.675289 - 0.635800; 0.539034 - 0.615952; 0.647850 - 0.631803; 0.933029 - 0.693471; ...
-  0.452149 - 0.481036; 0.476366 - 0.500610; 0.471062 - 0.496322];
-allenFrac = [0.400404; 0.235446; 0.384781; 0.781899; 0.446529; 0.473333; 0.467418];
+allenChange = cellfun(@(l) medChange(ua(l).logRates), allenLbl)';
+allenFrac = cellfun(@(l) ua(l).positiveFractionTable, allenLbl)';
 allenInc = [true true false true true true false];
 rateChange = nan(numel(areasOI),1);
 for iA = 1:numel(areasOI)
   x = frOI(areasOI{iA});
-  if ~isempty(x), rateChange(iA) = mean(x(:,2), 'omitnan') - mean(x(:,1), 'omitnan'); end
+  if ~isempty(x), rateChange(iA) = medChange(x); end   % difference of medians (2026-11-08)
 end
 fracAll = [corrOI.positiveSpearmanFractionsMeans(:,1); uolFrac; allenFrac];
 changeAll = [rateChange; uolChange; allenChange];
 inc = [incMask5 uolInc allenInc];
 [rho5, p5] = corrMulti(fracAll(inc)', changeAll(inc)', 'Spearman');
 [rho5i, p5i] = corrMulti(corrOI.positiveSpearmanFractionsMeans(incMask5,1)', rateChange(incMask5)', 'Spearman');
+for k = 1:numel(uolLbl), say(fid, '  %-12s median change %+.3f, positive fraction %.3f\n', uolLbl{k}, uolChange(k), uolFrac(k)); end
+for k = 1:numel(allenLbl), say(fid, '  %-12s median change %+.3f, positive fraction %.3f\n', allenLbl{k}, allenChange(k), allenFrac(k)); end
 say(fid, '\nFig. 5E: Spearman rho = %.2f, p = %.3g (%d area groups: %d IBL + %d UoL + %d Allen); IBL only rho = %.2f, p = %.3g\n', ...
   rho5, p5, sum(inc), sum(incMask5), sum(uolInc), sum(allenInc), rho5i, p5i);
 
 %% Dataset counts
 nExp = numel(infraslowData.experimentData);
-hasPupil = cellfun(@(e) ~isempty(e.leftPupilAreaSize) || ~isempty(e.rightPupilAreaSize), infraslowData.experimentData);
-nUnits = sum(cellfun(@(e) size(e.spikeCounts,1), infraslowData.experimentData));
-nUnitsPupil = sum(cellfun(@(e) size(e.spikeCounts,1), infraslowData.experimentData(hasPupil)));
+hasPupil = cellfun(@(e) (isfield(e, 'leftPupilAreaSize') && ~isempty(e.leftPupilAreaSize)) || ...
+  (isfield(e, 'rightPupilAreaSize') && ~isempty(e.rightPupilAreaSize)), infraslowData.experimentData);   % some sessions lack the fields
+nUnits = sum(cellfun(@(e) local_n(e), infraslowData.experimentData));
+nUnitsPupil = sum(cellfun(@(e) local_n(e), infraslowData.experimentData(hasPupil)));
 r = infraslowAnalyses.spikingPupilCorr.recordings.rSpearman;
 if iscell(r), nClassified = sum(cellfun(@(x) sum(isfinite(x(:))), r)); else, nClassified = sum(isfinite(r(:))); end
 say(fid, '\nCounts: %d sessions (%d with pupil), %d units (%d in sessions with pupil), %d units with a pupil correlation\n', ...
@@ -195,4 +212,22 @@ end
 function say(fid, varargin)
 % print to the command window and to the output file
 fprintf(varargin{:}); fprintf(fid, varargin{:});
+end
+
+
+function n = local_n(e)
+% unit count of a session (0 for sessions without spike data)
+if isfield(e, 'spikeCounts'), n = size(e.spikeCounts, 1); else, n = 0; end
+end
+
+
+function fig5med(fid, name, L)
+% medians, IQR, paired Wilcoxon signed-rank (normal approximation) and Brown-Forsythe test for one area
+ok = all(~isnan(L), 2); c = L(ok,1); d = L(ok,2); n = sum(ok);
+[pW, ~, sW] = signrank(c, d, 'method','approximate');
+[pBF, sBF] = vartestn([c d], 'TestType','BrownForsythe', 'Display','off');
+say(fid, '  %-15s n %d | median %.3f -> %.3f (IQR %.3f-%.3f -> %.3f-%.3f; widths %.2f -> %.2f) | median paired change %+.3f\n', ...
+  name, n, median(c), median(d), prctile(c,25), prctile(c,75), prctile(d,25), prctile(d,75), iqr(c), iqr(d), median(d - c));
+say(fid, '  %-15s Wilcoxon z = %.2f, p = %.2g | Brown-Forsythe F(%d, %d) = %.1f, p = %.2g | mean %.3f -> %.3f\n', '', ...
+  sW.zval, pW, sBF.df(1), sBF.df(2), sBF.fstat, pBF, mean(c), mean(d));
 end

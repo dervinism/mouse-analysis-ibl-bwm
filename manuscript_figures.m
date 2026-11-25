@@ -1,5 +1,5 @@
-function manuscript_figures(outDir, parts)
-% manuscript_figures(outDir)
+function manuscript_figures(outDir, parts, palette8, phaseLevel8)
+% manuscript_figures(outDir, parts, palette8, phaseLevel8)
 %
 % IBL panels of the manuscript figures, redrawn from the saved analysis
 % results after the probe01 fix, with the geometry, fonts and export
@@ -22,8 +22,20 @@ function manuscript_figures(outDir, parts)
 % Args:
 %   outDir (char, optional): default Work\Leicester\Paper_1\Figures_v4.
 %   parts (string array, optional): figures to draw, default ["3" "5" "8"].
+%   palette8 (char, optional): colours of Figures 3C and 8A-C, 'v4' (default,
+%     the pastel colours of Figures_v3/v4) or 'bright' (the saturated colours
+%     of the review manuscript's Figure 3C: thalamus blue, cortex yellow,
+%     hippocampus magenta, other areas grey; Figures_v5). Figure 5 always
+%     keeps the v4 colours.
+%   phaseLevel8 (char, optional): what Figure 8A-C means and CIs are taken
+%     over: 'recording' (default, v4: per-recording circular means, then
+%     their circular mean +- CI) or 'unit' (circular mean +- CI of all unit
+%     phases of the area group, the unit of analysis of the Table 7 tests
+%     and of the UoL/Allen Figures 6-7; Figures_v5).
 
 if nargin < 2 || isempty(parts), parts = ["3" "5" "8"]; end
+if nargin < 3 || isempty(palette8), palette8 = 'v4'; end
+if nargin < 4 || isempty(phaseLevel8), phaseLevel8 = 'recording'; end
 if nargin < 1 || isempty(outDir)
   outDir = 'C:\Users\m329786\Work\Leicester\Paper_1\Figures_v4';
 end
@@ -36,6 +48,11 @@ for d = ["Figure3" "Figure5" "Figure8"]
   if ~isfolder(fullfile(outDir, d)), mkdir(fullfile(outDir, d)); end
 end
 TH = [0.620 0.855 0.957]; CX = [0.843 0.788 0.361]; HP = [0.867 0.561 0.891]; GR = [211 211 211]/256;
+if strcmpi(palette8, 'bright')   % sampled from the review's Figure_3.tif (PiN submission); Figures 3 and 8
+  TH = [0 148 230]/255; CX = [225 173 1]/255; HP = [198 31 199]/255; GR = [140 140 140]/255;
+end
+groups = {'paCx', 'pCx', 'sensory-Th', 'association-Th', 'motor-Th', 'sensory-nCx', 'association-nCx', 'motor-nCx', ...
+  'CA', 'DG', 'AA', 'BG', 'Hyp', 'MBr', 'Cereb', 'CLA', 'BS', 'EPT', 'BF', 'STh', 'piCx'};   % the 21 non-overlapping groups of Figs 5E, 8D-F
 includeAreaInds = [1:14 17:18, 24 29:32 36:47 51];      % the 34 area groups of Fig. 3C / Fig. 8A-C (as the scripts)
 [sorted, order] = sort(corrOI.positiveSpearmanFractionsMeans(:,1), 'descend');
 order = order(~isnan(sorted)); order = order(ismember(order, includeAreaInds));
@@ -45,7 +62,7 @@ xOf = @(k) find(strcmp(keys, k));
 %% Figure 3C
 if any(parts == "3")
 % axes 31.02 cm wide with the width:height ratio of the v3 panel as placed in Figure3.pptx (3.553), 1.2 cm headroom
-axH = 31.02 / 3.553; figH = 4.074 + axH + 1.6;
+axH = 31.02 / 3.553; figH = 4.074 + axH + 1.95;
 fig = figure('Visible', 'off', 'Color', 'w', 'Units', 'centimeters', 'Position', [1 1 40.03 figH]);
 ax = axes(fig, 'Position', [0.13 4.074/figH 0.775 axH/figH]); hold(ax, 'on');
 perRec = cell(numel(order), 1);
@@ -65,10 +82,10 @@ ax.YAxis.FontWeight = 'bold';
 p1 = local_t(perRec{xOf('Th')}, perRec{xOf('nCx')}); p2 = local_t(perRec{xOf('nCx')}, perRec{xOf('Hp')});
 p3 = local_t(perRec{xOf('sensory')}, [perRec{xOf('motor')}; perRec{xOf('association')}]);
 fprintf('Fig 3C t-tests: Th-nCx p=%.3g, nCx-Hp p=%.3g, sensory-(motor+assoc) p=%.3g\n', p1, p2, p3);
-yl = 0.85; R = 0.5; lw = 3.5; fs = 26;   % as the hand-drawn brackets of panels A and B once placed in the layout
-local_join(ax, xOf('sensory'), [xOf('motor') xOf('association')], yl + 0.015*R, yl + 0.035*R, 0.015*R, local_stars(p3), lw, fs);
-local_bracket(ax, xOf('Th'), xOf('nCx'), yl + 0.09*R, 0.015*R, local_stars(p1), lw, fs);
-local_bracket(ax, xOf('nCx'), xOf('Hp'), yl + 0.09*R, 0.015*R, local_stars(p2), lw, fs);
+yl = 0.85; R = 0.5; lw = 3.5; fs = 22;   % as the hand-drawn brackets of panels A and B once placed in the layout
+local_join(ax, xOf('sensory'), [xOf('motor') xOf('association')], yl + 0.012*R, yl + 0.03*R, 0.012*R, local_stars(p3), lw, fs);
+local_bracket(ax, xOf('Th'), xOf('nCx'), yl + 0.128*R, 0.012*R, local_stars(p1), lw, fs);
+local_bracket(ax, xOf('nCx'), xOf('Hp'), yl + 0.128*R, 0.012*R, local_stars(p2), lw, fs);
 local_save(fig, fullfile(outDir, 'Figure3', 'FigureC_IBL'), [40.03 figH], 100);
 end
 
@@ -87,7 +104,11 @@ for iPop = 1:3   % per-recording circular mean phase at 0.3 Hz, then circular me
       for r = 1:numel(d)
         if isstruct(d{r}) && isfield(d{r}, 'fullInterpCoherence')
           fi = abs(d{r}.fullInterpCoherence.frequency(1,:) - 0.3) < 1e-6;
-          recPh = [recPh; datamean(d{r}.fullInterpCoherence.phase(:, fi), 'circularNP')]; %#ok<AGROW>
+          if strcmpi(phaseLevel8, 'unit')
+            recPh = [recPh; d{r}.fullInterpCoherence.phase(:, fi)]; %#ok<AGROW>
+          else
+            recPh = [recPh; datamean(d{r}.fullInterpCoherence.phase(:, fi), 'circularNP')]; %#ok<AGROW>
+          end
         end
       end
     end
@@ -136,12 +157,12 @@ for iv = 1:2
     title(ax, sprintf('%s (mean, 0.3 Hz)', pops{iPop, 3}), 'FontSize', 15); ylabel(ax, 'Phase (rad)');
     xticks(ax, 1:numel(order));
     if iPop == 3, xticklabels(ax, labels); xtickangle(ax, 60); else, xticklabels(ax, {}); end
+    annotation(fig, 'textbox', [0.005 axPos{iPop}(2) + axPos{iPop}(4) + 0.005 0.05 0.04], 'String', char('A' + iPop - 1), ...
+      'FontSize', 30, 'FontWeight', 'bold', 'LineStyle', 'none', 'VerticalAlignment', 'bottom');   % panel letters, as in v3
   end
   local_save(fig, fullfile(outDir, 'Figure8', ['Figure8_mean_' families{iv, 1}]), [43.18 44.45], 300);
 end
 % D-F: unit-level circular mean per area group (as the scatter part of phase_profiles_pupil.m), 21 groups
-groups = {'paCx', 'pCx', 'sensory-Th', 'association-Th', 'motor-Th', 'sensory-nCx', 'association-nCx', 'motor-nCx', ...
-  'CA', 'DG', 'AA', 'BG', 'Hyp', 'MBr', 'Cereb', 'CLA', 'BS', 'EPT', 'BF', 'STh', 'piCx'};
 gi = cellfun(@(g) find(strcmp(areasOI, g)), groups);
 frac = corrOI.positiveSpearmanFractionsMeans(gi, 1);
 for iPop = 1:3
@@ -169,7 +190,8 @@ for iPop = 1:3
   k = round(mean(y - (coef(1) * frac + coef(2))) / (2*pi));   % circular fit: put the line on the same cycle as the points
   plot(ax, xl, coef(1) * xl + coef(2) + 2*pi*k, ':k', 'LineWidth', 1.2);
   R = max(y) - min(y); yl = [min(y) - 0.08 * R, max(y) + 0.18 * R];
-  tks = (ceil(yl(1) / (pi/8)):floor(yl(2) / (pi/8))) * pi/8;
+  st = 1 + (diff(yl) > pi);   % pi/8 steps, or pi/4 over wide ranges (short labels for the layout's crop)
+  tks = (ceil(yl(1) / (st*pi/8)):floor(yl(2) / (st*pi/8))) * st*pi/8;
   set(ax, 'Box', 'off', 'TickDir', 'out', 'FontSize', 20, 'XLim', xl, 'YLim', yl, 'XTick', xl(1):0.1:xl(2), ...
     'YTick', tks, 'YTickLabel', arrayfun(@local_pilabel8, round(tks / (pi/8)), 'UniformOutput', false));
   xlabel(ax, 'Positive fraction'); if iPop == 1, ylabel(ax, 'Phase (rad)'); end
@@ -183,7 +205,9 @@ end
 
 %% Figure 5: DG distributions (already regenerated) and panels D, E
 if ~any(parts == "5"), return, end
-for f = ["Firing_rates_DG" "Split_firing_rates_DG"]
+TH = [0.620 0.855 0.957]; CX = [0.843 0.788 0.361]; HP = [0.867 0.561 0.891]; GR = [211 211 211]/256;   % palette8 is for Figures 3 and 8 only
+for f = ["Firing_rates_DG" "Split_firing_rates_DG" "Firing_rates_Th_UoL" "Split_firing_rates_Th_UoL" ...
+    "Firing_rates_Th_Allen" "Split_firing_rates_Th_Allen" "Firing_rates_Cx_Allen" "Split_firing_rates_Cx_Allen"]   % medians (2026-11-08)
   for e = [".fig" ".png"]
     copyfile(fullfile(figFolder, 'firing_rate_distros', f + e), fullfile(outDir, 'Figure5', f + e));
   end
@@ -200,26 +224,28 @@ for iArea = 1:nAreas   % log10 rate in the most constricted / dilated 12.5% (as 
     else, continue
     end
     counts = e.spikeCounts(areaInds(unitMask, 2), :); dur = size(counts, 2) / e.samplingRate;
-    active = sum(counts, 2) / dur > firingRateThr; pv = prctile(pupil, [12.5 87.5]);
-    lo = zeros(sum(unitMask), 1); hi = lo;
-    lo(active) = sum(counts(active, pupil <= pv(1)), 2) / dur; hi(active) = sum(counts(active, pupil > pv(2)), 2) / dur;
-    lo(~lo) = nan; hi(~hi) = nan; fr(unitMask, :) = [log10(lo) log10(hi)];
+    active = sum(counts, 2) / dur > firingRateThr;
+    [~, lr] = stateRates(counts, pupil, e.samplingRate, 12.5);   % time-in-state denominator, zero -> -3 (as UoL/Allen)
+    lr = reshape(lr, [], 2); lr(~active, :) = nan; fr(unitMask, :) = lr;
   end
   firingRates{iArea} = fr;
 end
 clear infraslowData
-uolAreas = {'CA UoL', 'neoCx UoL', 'DG UoL', 'CA-DG UoL', 'RSP UoL', 'S1 UoL', 'Th UoL'};   % typed-in values of firing_rate_figures.m
-uolChange = [0.145666 - 0.298024; 0.341518 - 0.259733; 0.289202 - 0.458551; 0.249652 - 0.424188; 0.434660 - 0.418259; ...
-  0.300893 - 0.190590; 0.770454 - 0.415658];
-uolFrac = [0.475467; 0.674299; 0.400523; 0.461996; 0.607605; 0.69995; 0.874251]; uolInc = [true false true false true true true];
+% UoL / Allen values from the per-unit data (extract_uol_allen_fig5.m; Allen = Aug/Sep 2025 run) and the Table 2/3
+% positive fractions; changes are differences of medians (2026-11-08; were typed-in mean differences)
+load(fullfile(processedDataFolder, 'uolAllen_fig5.mat'), 'uolAllenFig5');
+ua = @(lbl) uolAllenFig5(strcmp({uolAllenFig5.label}, lbl));
+medChange = @(L) median(L(:, 2), 'omitnan') - median(L(:, 1), 'omitnan');
+uolAreas = {'CA UoL', 'neoCx UoL', 'DG UoL', 'CA-DG UoL', 'RSP UoL', 'S1 UoL', 'Th UoL'};
+uolChange = cellfun(@(l) medChange(ua(l).logRates), uolAreas)'; uolFrac = cellfun(@(l) ua(l).positiveFractionTable, uolAreas)';
+uolInc = [true false true false true true true];
 allenAreas = {'CA Allen', 'DG Allen', 'CA-DG Allen', 'Th Allen', 'V1 Allen', 'V2 Allen', 'Cx Allen'};
-allenChange = [0.675289 - 0.635800; 0.539034 - 0.615952; 0.647850 - 0.631803; 0.933029 - 0.693471; 0.452149 - 0.481036; ...
-  0.476366 - 0.500610; 0.471062 - 0.496322];
-allenFrac = [0.400404; 0.235446; 0.384781; 0.781899; 0.446529; 0.473333; 0.467418]; allenInc = [true true false true true true false];
+allenChange = cellfun(@(l) medChange(ua(l).logRates), allenAreas)'; allenFrac = cellfun(@(l) ua(l).positiveFractionTable, allenAreas)';
+allenInc = [true true false true true true false];
 rateChange = nan(numel(areasOI), 1);
 for i = 1:numel(areasOI)
   x = concatenateCells(firingRates(getAreaInds(areasOI{i}, areaTable)));
-  if ~isempty(x), rateChange(i) = mean(x(:, 2), 'omitnan') - mean(x(:, 1), 'omitnan'); end
+  if ~isempty(x), rateChange(i) = medChange(x); end
 end
 keysAll = [areasOI; uolAreas'; allenAreas']; labAll = [areasOI_full; uolAreas'; allenAreas'];
 labAll(strcmp(keysAll, 'CA-DG UoL')) = {'Hp UoL'}; labAll(strcmp(keysAll, 'CA-DG Allen')) = {'Hp Allen'};
@@ -234,7 +260,7 @@ end
 plot(ax, [0.5 numel(o) + 0.5], [0 0], ':');
 yl = max(0.4, ceil(max(abs(changeAll(o))) * 10) / 10);
 set(ax, 'Box', 'off', 'TickDir', 'out', 'FontSize', 14, 'XLim', [0.5 numel(o) + 0.5], 'YLim', [-yl yl], 'XTick', 1:numel(o), ...
-  'XTickLabel', labAll(o)); xtickangle(ax, 45); ylabel(ax, 'Log_{10}(Firing rate) change');
+  'XTickLabel', labAll(o)); xtickangle(ax, 45); ylabel(ax, 'Median log_{10}(rate) change');
 local_save(fig, fullfile(outDir, 'Figure5', 'firing_rate_change_collection'), [40.47 11.11], 100);
 incE = [ismember(1:numel(areasOI), cellfun(@(g) find(strcmp(areasOI, g)), groups)), uolInc, allenInc];   % panel E: 21 + 5 + 5
 [rhoE, pE] = corrMulti(fracAll(incE)', changeAll(incE)', 'Spearman');
@@ -244,7 +270,7 @@ ax = axes(fig, 'Position', [0.146 0.146 0.759 0.779]); hold(ax, 'on');
 plot(ax, fracAll(incE), changeAll(incE), 'o', 'MarkerSize', 5, 'MarkerEdgeColor', 'b', 'MarkerFaceColor', 'b');
 xl = [0.2 0.9]; plot(ax, xl, cE(1) * xl + cE(2), ':k');
 set(ax, 'Box', 'off', 'TickDir', 'out', 'FontSize', 14, 'XLim', xl, 'YLim', [-yl yl]);
-xlabel(ax, 'Positive fraction'); ylabel(ax, 'Log_{10}(Firing rate) change');
+xlabel(ax, 'Positive fraction'); ylabel(ax, 'Median log_{10}(rate) change');
 text(ax, xl(1) + 0.05 * diff(xl), 0.95 * yl, sprintf('rho = %.2f  p = %.2g', rhoE, pE), 'FontSize', 10);
 fprintf('Fig 5E: rho = %.2f, p = %.3g, %d groups\n', rhoE, pE, sum(incE));
 local_save(fig, fullfile(outDir, 'Figure5', 'positive_fraction_v_firing_rate_change'), [14.82 11.11], 100);

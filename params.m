@@ -74,10 +74,10 @@ areaLabels = { ...
   'AA',     'CEA',      'Central amygdalar nucleus',                                           'association';
   'Cereb',  'CENT2',    'Lobule II',                                                           '';
   'Cereb',  'CENT3',    'Lobule III',                                                          '';
-  'Th',     'CL',       'Central lateral nucleus of the thalamus',                             'motor';
+  'Th',     'CL',       'Central lateral nucleus of the thalamus',                             'association';   % V3 2026-11-08 (was motor)
   'CLA',    'CLA',      'Claustrum',                                                           'association';
   'MBr',    'CLI',      'Central linear nucleus raphe',                                        '';
-  'Th',     'CM',       'Central medial nucleus of the thalamus',                              'motor';
+  'Th',     'CM',       'Central medial nucleus of the thalamus',                              'association';   % V3 2026-11-08 (was motor)
   'AA',     'COAa',     'Cortical amygdalar area, anterior part',                              'association';
   'AA',     'COAp',     'Cortical amygdalar area, posterior part',                             'association';
   'Cereb',  'COPY',     'Copula pyramidis',                                                    '';
@@ -132,7 +132,7 @@ areaLabels = { ...
   'EPT',    'LH',       'Lateral habenula',                                                    '';
   'Hyp',    'LHA',      'Lateral hypothalamic area',                                           '';
   'Cereb',  'LING',     'Lingula (I)',                                                         '';
-  'Th',     'LP',  	    'Lateral posterior nucleus of the thalamus',                           'association';
+  'Th',     'LP',  	    'Lateral posterior nucleus of the thalamus',                           'sensory';   % V3 2026-11-08 (was association)
   'Hyp',    'LPO',      'Lateral preoptic area',                                               '';
   'BS',     'LRN',      'Lateral reticular nucleus',                                           '';
   'BF',     'LSc',      'Lateral septal nucleus, caudal (caudodorsal) part',                   '';
@@ -165,7 +165,7 @@ areaLabels = { ...
   'MBr',    'OP',       'Olivary pretectal nucleus',                                           '';
   'nCx',    'ORBm',     'Orbital area, medial part',                                           'association';
   'nCx',    'ORBvl',    'Orbital area, ventrolateral part',                                    'association';
-  'BG',     'OT',       'Olfactory tubercle',                                                  'sensory';
+  'BG',     'OT',       'Olfactory tubercle',                                                  'unclassified';   % V3 2026-11-08 (was sensory)
   'BS',     'P5',       'Peritrigeminal zone',                                                 '';
   'AA',     'PA',       'Posterior amygdalar nucleus',                                         'association';
   'MBr',    'PAG',      'Periaqueductal gray',                                                 '';
@@ -176,15 +176,15 @@ areaLabels = { ...
   'MBr',    'PBG',      'Parabigeminal nucleus',                                               '';
   'BS',     'PC5',      'Parvicellular motor 5 nucleus',                                       '';
   'BS',     'PCG',      'Pontine central gray',                                                '';
-  'Th',     'PCN',      'Paracentral nucleus',                                                 'motor';
+  'Th',     'PCN',      'Paracentral nucleus',                                                 'association';   % V3 2026-11-08 (was motor)
   'BS',     'PDTg',     'Posterodorsal tegmental nucleus',                                     '';
   'paCx',   'PERI',     'Perirhinal area',                                                     'association';
-  'Th',     'PF',       'Parafascicular nucleus',                                              'motor';
+  'Th',     'PF',       'Parafascicular nucleus',                                              'association';   % V3 2026-11-08 (was motor)
   'Cereb',  'PFL',      'Paraflocculus',                                                       '';
   'BS',     'PG',       'Pontine gray',                                                        '';
   'BS',     'PGRN',     'Paragigantocellular reticular nucleus',                               '';
   'Hyp',    'PH',       'Posterior hypothalamic nucleus',                                      '';
-  'Th',     'PIL',      'Posterior intralaminar thalamic nucleus',                             'motor';
+  'Th',     'PIL',      'Posterior intralaminar thalamic nucleus',                             'association';   % V3 2026-11-08 (was motor)
   'pCx',    'PIR',      'Piriform area',                                                       'sensory';
   'nCx',    'PL',       'Prelimbic area',                                                      'association';
   'Hyp',    'PMd',      'Dorsal premammillary nucleus',                                        '';
@@ -194,7 +194,7 @@ areaLabels = { ...
   'Th',     'PP',       'Peripeduncular nucleus',                                              '';
   'MBr',    'PPN',      'Pedunculopontine nucleus',                                            '';
   'MBr',    'PPT',      'Posterior pretectal nucleus',                                         '';
-  'Th',     'PR',       'Perireunensis nucleus',                                               'motor';
+  'Th',     'PR',       'Perireunensis nucleus',                                               'association';   % V3 2026-11-08 (was motor)
   'paCx',   'PRE',      'Presubiculum',                                                        'association';
   'Cereb',  'PRM',      'Paramedian lobule',                                                   '';
   'BS',     'PRNc',     'Pontine reticular nucleus, caudal part',                              '';
@@ -221,7 +221,7 @@ areaLabels = { ...
   'piCx',   'RSPagl',   'Retrosplenial area, lateral agranular part',                          'association';
   'piCx',   'RSPd',     'Retrosplenial area, dorsal part',                                     'association';
   'paCx',   'RSPv',     'Retrosplenial area, ventral part',                                    'association';
-  'Th',     'RT',       'Reticular nucleus of the thalamus',                                   'association';
+  'Th',     'RT',       'Reticular nucleus of the thalamus',                                   'unclassified';   % V3 2026-11-08 (was association)
   'MBr',    'SCm',      'Superior colliculus, motor related',                                  '';
   'MBr',    'SCs',      'Superior colliculus, sensory related',                                '';
   'BF',     'SF',       'Septofimbrial nucleus',                                               '';
@@ -264,7 +264,7 @@ areaLabels = { ...
   'BS',     'VCO',      'Ventral cochlear nucleus',                                            '';
   'BS',     'VII',      'Facial motor nucleus',                                                '';
   'nCx',    'VISC',     'Visceral area',                                                       'sensory';
-  'nCx',    'VISa',     'Anterior area',                                                       'sensory';
+  'nCx',    'VISa',     'Anterior area',                                                       'association';   % V3 2026-11-08 (was sensory)
   'nCx',    'VISam',    'Anteromedial visual area',                                            'sensory';
   'nCx',    'VISl',     'Lateral visual area',                                                 'sensory';
   'nCx',    'VISli',    'Laterointermediate area',                                             'sensory';
@@ -272,7 +272,7 @@ areaLabels = { ...
   'nCx',    'VISpl',    'Posterolateral visual area',                                          'sensory';
   'nCx',    'VISpm',    'posteromedial visual area',                                           'sensory';
   'nCx',    'VISpor',   'Postrhinal area',                                                     'sensory';
-  'nCx',    'VISrl',    'Rostrolateral visual area',                                           'sensory';
+  'nCx',    'VISrl',    'Rostrolateral visual area',                                           'association';   % V3 2026-11-08 (was sensory)
   'Th',     'VM',       'Ventral medial nucleus of the thalamus',                              'motor';
   'Hyp',    'VMH',      'Ventromedial hypothalamic nucleus',                                   '';
   'Th',     'VPL',      'Ventral posterolateral nucleus of the thalamus',                      'sensory';

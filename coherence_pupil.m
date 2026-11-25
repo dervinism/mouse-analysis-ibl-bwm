@@ -73,7 +73,7 @@ for iArea = resumeInd:nAreas
       if strcmpi(population, 'positive') || strcmpi(population, 'negative')
         if ~isempty(expPupilCorrDataR) && any(~isnan(expPupilCorrDataR))
           if strcmpi(population, 'positive')
-            unitMask = unitMask & expPupilCorrDataR > 0;
+            unitMask = unitMask & expPupilCorrDataR >= 0; % rho >= 0 as in the UoL/Allen code (2026-11-08)
           elseif strcmpi(population, 'negative')
             unitMask = unitMask & expPupilCorrDataR < 0;
           end

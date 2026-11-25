@@ -10,6 +10,11 @@ excludeMovement = false;
 includeAllAreas = true;
 percentiles = [12.5 25 100/3 37.5 50 62.5 200/3 75 87.5];
 firingRateThr = 50/3600;
+if ~exist('useMedians', 'var') || isempty(useMedians)
+  useMedians = true;   % 2026-11-08 (co-author request): medians, paired Wilcoxon, Brown-Forsythe instead of means, t, Levene
+end
+% UoL and Allen per-unit data for Figure 5 (extract_uol_allen_fig5.m; Allen = Aug/Sep 2025 run)
+load(fullfile(processedDataFolder, 'uolAllen_fig5.mat'), 'uolAllenFig5');
 
 % Load preprocessed data
 if ~exist('infraslowData', 'var')
@@ -73,23 +78,20 @@ for iArea = 1:nAreas
     logFiringRates_exp = log10(firingRates_exp);
 
     activeUnits = firingRates_exp > firingRateThr;
-    bottomFiringRate_exp = zeros(nUnits,nCentiles);
-    topFiringRate_exp = zeros(nUnits,nCentiles);
     if ~isempty(pupilAreaSize)
-      percentileValues = prctile(pupilAreaSize,percentiles);
-      for iCent = 1:nCentiles
-        bottomPupilAreaSizeMask = pupilAreaSize <= percentileValues(iCent);
-        topPupilAreaSizeMask = pupilAreaSize > percentileValues(end - iCent + 1);
-        bottomFiringRate_exp(activeUnits,iCent) = sum(spikeCounts(activeUnits,bottomPupilAreaSizeMask),2)/expDuration;
-        topFiringRate_exp(activeUnits,iCent) = sum(spikeCounts(activeUnits,topPupilAreaSizeMask),2)/expDuration;
-      end
-      bottomFiringRate_exp(~bottomFiringRate_exp) = nan;
-      topFiringRate_exp(~topFiringRate_exp) = nan;
+      % State rates as in the UoL/Allen analysis (2026-11-08 fix): spike count in the state / time spent
+      % in it (was / whole-recording duration, ~8x too low), silent units kept at a zero rate with
+      % log10 = -3 (were dropped from that state only, unpairing the comparison). Inactive units: NaN.
+      [stRates, stLogRates] = stateRates(spikeCounts, pupilAreaSize, samplingRate, percentiles(1:nCentiles));
+      bottomFiringRate_exp = stRates(:,:,1); topFiringRate_exp = stRates(:,:,2);
+      logBottomFiringRate_exp = stLogRates(:,:,1); logTopFiringRate_exp = stLogRates(:,:,2);
+      bottomFiringRate_exp(~activeUnits,:) = nan; topFiringRate_exp(~activeUnits,:) = nan;
+      logBottomFiringRate_exp(~activeUnits,:) = nan; logTopFiringRate_exp(~activeUnits,:) = nan;
       firingRateChange_exp = topFiringRate_exp - bottomFiringRate_exp;
-      logBottomFiringRate_exp = log10(bottomFiringRate_exp);
-      logTopFiringRate_exp = log10(topFiringRate_exp);
       logFiringRateChange_exp = logTopFiringRate_exp - logBottomFiringRate_exp;
     else
+      bottomFiringRate_exp = nan(nUnits,nCentiles);   % no pupil: no state rates (was 0)
+      topFiringRate_exp = nan(nUnits,nCentiles);
       firingRateChange_exp = nan(nUnits,nCentiles);
       logBottomFiringRate_exp = nan(nUnits,nCentiles);
       logTopFiringRate_exp = nan(nUnits,nCentiles);
@@ -190,93 +192,22 @@ firingRatesOI = cell(nAreas,1);
 binSize = 0.35;
 binEdges = -3.5:binSize:2.5;
 bins = binEdges(1:end-1)+binSize/2;
+distroFolder = fullfile(figFolder, 'firing_rate_distros');
+if ~isfolder(distroFolder)
+  mkdir(distroFolder);
+end
 for iArea = 1:nAreas
   areaInds = getAreaInds(areasOI{iArea}, infraslowAnalyses.areaSummaries.areaTable);
   firingRatesOI{iArea} = concatenateCells(firingRates(areaInds));
   rSpearman = firingRatesOI{iArea}(:,1);
   bottomFiringRate = firingRatesOI{iArea}(:,20);
   topFiringRate = firingRatesOI{iArea}(:,25);
-  bottomFiringRateDistro = histcounts(bottomFiringRate, binEdges);
-  topFiringRateDistro = histcounts(topFiringRate, binEdges);
-
-  % fH = figure;
-  % plot(bins, bottomFiringRateDistro);
-  % hold on
-  % plot(bins, topFiringRateDistro);
-  % hold off
-  % title(areasOI{iArea})
-  % legend('0:12.5%','87.5:100%')
-  % close(fH);
-
-  % Plot data distributions
-  logRates = [bottomFiringRate topFiringRate];
-  options.legendLabels = {'constricted','dilated'};
-  options.lineStyles = {'-','-'};
-  options.lineWidths = [2 2];
-  options.markerStyles = {'.','o'};
-  options.displayMeans = true;
-  options.displayVars = true;
-  options.markerVPos = 1.15*max([max(bottomFiringRateDistro) max(topFiringRateDistro)]);
-  options.xLim = [-3 1.5];
-  options.xLabel = 'Log_{10}(firing rate)';
-  options.yLabel = 'Unit count';
-  options.saveFig = false;
-  options.figSize = 18;
-  options.figName = ['Firing_rates_' areasOI{iArea}];
-  options.fH = [];
-  options.fH = histPlotFR(binEdges, logRates, options);
-
-  % Display stats
-  digit = 3;
-  statsMean = meanTest(logRates, 'ANOVARM');
-  statsVar = varTest(logRates);
-  text(max(datamean(logRates))+0.2,options.markerVPos, ['p=' num2str(round(statsMean.p,digit,'significant'))], 'FontSize',20);
-  text(max(datamean(logRates))-0.6,0.125*max([max(bottomFiringRateDistro) max(bottomFiringRateDistro)]),...
-    ['p=' num2str(round(statsVar.p,digit,'significant'))], 'FontSize',20);
-
-  % Save the figure
-  distroFolder = fullfile(figFolder, 'firing_rate_distros');
-  if ~isfolder(distroFolder)
-    mkdir(distroFolder);
-  end
-  label = [3.9 3.1];
-  margin = [0.6 0.55];
-  width = options.figSize-label(1)-margin(1);
-  height = options.figSize-label(2)-margin(2);
-  paperSize = resizeFig(options.fH, gca, width, height, label, margin, 0);
-  hgsave(options.fH, [distroFolder filesep options.figName '.fig']);
-  exportFig(options.fH, [distroFolder filesep options.figName '.png'],'-dpng','-r300', paperSize);
-  close(options.fH);
-
-  % Draw split +/- data distributions
-  options = struct();
-  options.xLim = [-3 1.5];
-  options.xLabel = 'Log_{10}(firing rate)';
-  options.yLabel = 'Unit count';
-  options.figFolder = distroFolder;
-  options.figSize = 18;
-  options.pdf = false;
-  options.colours = [matlabColours(1); matlabColours(2); matlabColours(1); matlabColours(2)];
-  options.lineStyles = {'--','--','-','-'};
-  options.markerStyles = {'v','v','^','^'};
-  options.legendLabels = {'Constricted -','Constricted +','Dilated -','Dilated +'};
-  options.stats = [];
-  options.saveFig = false;
-  logRates2 = {bottomFiringRate(rSpearman < 0, 1), bottomFiringRate(rSpearman >= 0, 1), ...
-    topFiringRate(rSpearman < 0, end), topFiringRate(rSpearman >= 0, end)};
-  fH = histPlotFR(binEdges, logRates2, options);
-  l = legend;
-
-  % Save the figure
-  options.figName = ['Split_firing_rates_' areasOI{iArea}];
-  label = [3.9 3.1];
-  margin = [0.6 0.55];
-  width = options.figSize-label(1)-margin(1);
-  height = options.figSize-label(2)-margin(2);
-  paperSize = resizeFig(fH, gca, width, height, label, margin, 0);
-  hgsave(fH, [distroFolder filesep options.figName '.fig']);
-  exportFig(fH, [distroFolder filesep options.figName '.png'],'-dpng','-r300', paperSize);
-  close(fH);
+  plotRateDistros(bottomFiringRate, topFiringRate, rSpearman, areasOI{iArea}, distroFolder, binEdges, useMedians);
+end
+% UoL and Allen areas shown in Figure 5 (A: UoL thalamus or Allen thalamus; B: Allen visual cortex)
+for lbl = {'Th UoL', 'Th Allen', 'Cx Allen'}
+  e = uolAllenFig5(strcmp({uolAllenFig5.label}, lbl{1}));
+  plotRateDistros(e.logRates(:,1), e.logRates(:,2), e.rho, strrep(lbl{1}, ' ', '_'), distroFolder, binEdges, useMedians);
 end
 
 
@@ -285,35 +216,24 @@ includeExtraData = true;
 uolData_areas = {'CA UoL', 'neoCx UoL', 'DG UoL', 'CA-DG UoL', 'RSP UoL', ...
   'S1 UoL', 'Th UoL'};
 uolDdata_incMask = [true false true false true true true];
-uolData_firingRateChange = [0.145666 - 0.298024;
-                            0.341518 - 0.259733;
-                            0.289202 - 0.458551;
-                            0.249652 - 0.424188;
-                            0.434660 - 0.418259;
-                            0.300893 - 0.190590;
-                            0.770454 - 0.415658];
-uolData_positiveFraction = [0.475467; 0.674299; 0.400523; 0.461996; ...
-                            0.607605; 0.69995; 0.874251];
-
 allenData_areas = {'CA Allen', 'DG Allen', 'CA-DG Allen', 'Th Allen', ...
   'V1 Allen', 'V2 Allen', 'Cx Allen'};
 allenDdata_incMask = [true true false true true true false];
-% allenData_firingRateChange = [-(0.675289 - 0.635800);
-%                               0.539034 - 0.615952;
-%                               -0.06; %0.647850 - 0.631803;
-%                               0.933029 - 0.693471;
-%                               0.452149 - 0.481036;
-%                               0.476366 - 0.500610;
-%                               0.471062 - 0.496322];
-allenData_firingRateChange = [0.675289 - 0.635800;
-                              0.539034 - 0.615952;
-                              0.647850 - 0.631803;
-                              0.933029 - 0.693471;
-                              0.452149 - 0.481036;
-                              0.476366 - 0.500610;
-                              0.471062 - 0.496322];
-allenData_positiveFraction = [0.400404; 0.235446; 0.384781; 0.781899; ...
-                              0.446529; 0.473333; 0.467418];
+% Rate changes and positive fractions of the UoL and Allen areas (2026-11-08): rate changes computed from the
+% per-unit data in uolAllen_fig5.mat (previously hard-coded, see firing_rate_figures_before_medians_20261108.m.txt);
+% positive fractions = the per-recording means behind Tables 2 and 3 (see extract_uol_allen_fig5.m).
+uolData_firingRateChange = nan(numel(uolData_areas), 1); uolData_positiveFraction = nan(numel(uolData_areas), 1);
+for k = 1:numel(uolData_areas)
+  e = uolAllenFig5(strcmp({uolAllenFig5.label}, uolData_areas{k}));
+  uolData_firingRateChange(k) = stateChange(e.logRates(:,1), e.logRates(:,2), useMedians);
+  uolData_positiveFraction(k) = e.positiveFractionTable;
+end
+allenData_firingRateChange = nan(numel(allenData_areas), 1); allenData_positiveFraction = nan(numel(allenData_areas), 1);
+for k = 1:numel(allenData_areas)
+  e = uolAllenFig5(strcmp({uolAllenFig5.label}, allenData_areas{k}));
+  allenData_firingRateChange(k) = stateChange(e.logRates(:,1), e.logRates(:,2), useMedians);
+  allenData_positiveFraction(k) = e.positiveFractionTable;
+end
 
 % Firing rate summary figures: Firing rate change
 incMask = [false false false false false true true false true true true ...
@@ -358,8 +278,7 @@ for iArea = 1:nAreas
       firingRatesOI{iArea} = concatenateCells(firingRates(areaInds)); %#ok<*SAGROW>
       bottomFiringRate = firingRatesOI{iArea}(:,20);
       topFiringRate = firingRatesOI{iArea}(:,25);
-      rateChange = mean(topFiringRate, 'omitnan') - mean(bottomFiringRate, 'omitnan');
-      rateChange_alt = mean(topFiringRate - bottomFiringRate, 'omitnan');
+      rateChange = stateChange(bottomFiringRate, topFiringRate, useMedians);
     end
 
     if contains(areasOI(areaOrderOI(iArea)), {'Th', 'VP', 'PO', 'LG', 'LP'}) && ~strcmpi(areasOI(areaOrderOI(iArea)), 'STh')
@@ -472,7 +391,7 @@ for iArea = 1:nAreasInit
   firingRatesOI{iArea} = concatenateCells(firingRates(areaInds)); %#ok<*SAGROW>
   bottomFiringRate = firingRatesOI{iArea}(:,20);
   topFiringRate = firingRatesOI{iArea}(:,25);
-  rateChange(iArea) = mean(topFiringRate, 'omitnan') - mean(bottomFiringRate, 'omitnan');
+  rateChange(iArea) = stateChange(bottomFiringRate, topFiringRate, useMedians);
 end
 if includeExtraData
   rateChange = [rateChange; uolData_firingRateChange; allenData_firingRateChange];
@@ -519,3 +438,94 @@ set(ax, 'TickDir', 'out');
 ax.FontSize = fontSize - 4;
 %set(get(ax, 'XAxis'), 'FontWeight', 'bold');
 %set(get(ax, 'YAxis'), 'FontWeight', 'bold');
+
+
+%% Local functions
+function d = stateChange(bottom, top, useMedians)
+% Change of log10 firing rate from the constricted to the dilated state: difference of medians (useMedians) or means.
+if useMedians
+  d = median(top, 'omitnan') - median(bottom, 'omitnan');
+else
+  d = mean(top, 'omitnan') - mean(bottom, 'omitnan');
+end
+end
+
+
+function plotRateDistros(bottomFiringRate, topFiringRate, rSpearman, areaName, distroFolder, binEdges, useMedians)
+% Constricted vs dilated log firing rate distributions (all units; and split by the sign of rho), with the
+% location test (paired t / Wilcoxon signed-rank) and the spread test (Levene quadratic / Brown-Forsythe).
+bottomFiringRateDistro = histcounts(bottomFiringRate, binEdges);
+topFiringRateDistro = histcounts(topFiringRate, binEdges);
+logRates = [bottomFiringRate topFiringRate];
+options.legendLabels = {'constricted','dilated'};
+options.lineStyles = {'-','-'};
+options.lineWidths = [2 2];
+options.markerStyles = {'.','o'};
+options.displayMeans = true;
+options.displayVars = true;
+if useMedians, options.centre = 'median'; end
+options.markerVPos = 1.15*max([max(bottomFiringRateDistro) max(topFiringRateDistro)]);
+options.xLim = [-3 2];   % widened from 1.5 (user, 2026-11-08): the fastest units were cut off
+options.xLabel = 'Log_{10}(firing rate)';
+options.yLabel = 'Unit count';
+options.saveFig = false;
+options.figSize = 18;
+options.figName = ['Firing_rates_' areaName];
+options.fH = [];
+options.fH = histPlotFR(binEdges, logRates, options);
+
+% Display stats
+digit = 3;
+ok = all(~isnan(logRates), 2);
+if useMedians
+  pLoc = signrank(logRates(ok,1), logRates(ok,2), 'method','approximate');
+  pSpread = vartestn(logRates(ok,:), 'TestType','BrownForsythe', 'Display','off');
+  centres = median(logRates(ok,:));
+else
+  statsMean = meanTest(logRates, 'ANOVARM'); pLoc = statsMean.p;
+  statsVar = varTest(logRates); pSpread = statsVar.p;
+  centres = datamean(logRates);
+end
+if useMedians && max(centres) + 1.6 > options.xLim(2)   % no room right of the markers: right-aligned to their left
+  text(min(centres)-0.15,options.markerVPos, ['p=' num2str(round(pLoc,digit,'significant'))], 'FontSize',20, 'HorizontalAlignment','right');
+else
+  text(max(centres)+0.2,options.markerVPos, ['p=' num2str(round(pLoc,digit,'significant'))], 'FontSize',20);
+end
+text(max(centres)-0.6,0.125*max([max(bottomFiringRateDistro) max(bottomFiringRateDistro)]),...
+  ['p=' num2str(round(pSpread,digit,'significant'))], 'FontSize',20);
+
+% Save the figure
+label = [3.9 3.1];
+margin = [0.6 0.55];
+width = options.figSize-label(1)-margin(1);
+height = options.figSize-label(2)-margin(2);
+paperSize = resizeFig(options.fH, gca, width, height, label, margin, 0);
+hgsave(options.fH, [distroFolder filesep options.figName '.fig']);
+exportFig(options.fH, [distroFolder filesep options.figName '.png'],'-dpng','-r300', paperSize);
+close(options.fH);
+
+% Draw split +/- data distributions (units without a pupil correlation are left out)
+options = struct();
+options.xLim = [-3 2];
+options.xLabel = 'Log_{10}(firing rate)';
+options.yLabel = 'Unit count';
+options.figFolder = distroFolder;
+options.figSize = 18;
+options.pdf = false;
+options.colours = [matlabColours(1); matlabColours(2); matlabColours(1); matlabColours(2)];
+options.lineStyles = {'--','--','-','-'};
+options.markerStyles = {'v','v','^','^'};
+options.legendLabels = {'Constricted -','Constricted +','Dilated -','Dilated +'};
+options.stats = [];
+options.saveFig = false;
+if useMedians, options.centre = 'median'; end
+logRates2 = {bottomFiringRate(rSpearman < 0, 1), bottomFiringRate(rSpearman >= 0, 1), ...
+  topFiringRate(rSpearman < 0, end), topFiringRate(rSpearman >= 0, end)};
+fH = histPlotFR(binEdges, logRates2, options);
+legend;
+options.figName = ['Split_firing_rates_' areaName];
+paperSize = resizeFig(fH, gca, width, height, label, margin, 0);
+hgsave(fH, [distroFolder filesep options.figName '.fig']);
+exportFig(fH, [distroFolder filesep options.figName '.png'],'-dpng','-r300', paperSize);
+close(fH);
+end
